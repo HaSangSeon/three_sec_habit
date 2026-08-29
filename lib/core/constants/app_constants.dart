@@ -20,7 +20,11 @@ class AppConstants {
   static const String widgetDataKeyHabits = 'widget_habits_json';
   static const String widgetDataKeyDate = 'widget_date_str';
 
-  // AdMob 테스트 광고 ID (Google 공식 테스트 ID)
+  // AdMob 실서비스 광고 ID
+  static const String admobAppId = 'ca-app-pub-3702899361747571~1804729736';
+  static const String realBannerAdId = 'ca-app-pub-3702899361747571/9523437656';
+
+  // AdMob 테스트 광고 ID (Google 공식 테스트 ID - 디버그용)
   // 안드로이드 배너 테스트 ID
   static const String testBannerAdId = 'ca-app-pub-3940256099942544/6300978111';
   // 안드로이드 전면 광고 테스트 ID

@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../constants/app_constants.dart';
 import '../utils/date_util.dart';
@@ -22,6 +21,10 @@ class AdService {
     }
   }
 
+  /// 배너 광고 단위 ID (릴리즈 시 실제 AdMob ID, 디버그 시 테스트 ID)
+  static String get bannerAdUnitId =>
+      kReleaseMode ? AppConstants.realBannerAdId : AppConstants.testBannerAdId;
+
   /// 하단 배너 광고 생성
   static BannerAd? createBannerAd({
     required Function() onAdLoaded,
@@ -29,7 +32,7 @@ class AdService {
   }) {
     if (!_isInitialized) return null;
     return BannerAd(
-      adUnitId: AppConstants.testBannerAdId,
+      adUnitId: bannerAdUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
