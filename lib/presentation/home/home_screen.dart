@@ -70,34 +70,42 @@ class _HomeScreenState extends State<HomeScreen> {
             top: BorderSide(color: context.surfaceBorder, width: 0.8),
           ),
         ),
-        child: NavigationBar(
-          selectedIndex: _currentTabIndex,
-          onDestinationSelected: (index) {
-            setState(() {
-              _currentTabIndex = index;
-            });
-          },
-          backgroundColor: context.bg,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.check_circle_outline_rounded),
-              selectedIcon:
-                  Icon(Icons.check_circle_rounded, color: AppColors.primary),
-              label: '오늘의 습관',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.bar_chart_rounded),
-              selectedIcon:
-                  Icon(Icons.bar_chart_rounded, color: AppColors.primary),
-              label: '통계/기록',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon:
-                  Icon(Icons.settings_rounded, color: AppColors.primary),
-              label: '설정',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 모든 메뉴(오늘의 습관, 통계, 설정) 공통 가로 100% 하단 배너 광고
+            const AdBannerSlot(),
+            // 하단 내비게이션 바
+            NavigationBar(
+              selectedIndex: _currentTabIndex,
+              onDestinationSelected: (index) {
+                setState(() {
+                  _currentTabIndex = index;
+                });
+              },
+              backgroundColor: context.bg,
+              surfaceTintColor: Colors.transparent,
+              indicatorColor: AppColors.primary.withValues(alpha: 0.2),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.check_circle_outline_rounded),
+                  selectedIcon:
+                      Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                  label: '오늘의 습관',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.bar_chart_rounded),
+                  selectedIcon:
+                      Icon(Icons.bar_chart_rounded, color: AppColors.primary),
+                  label: '통계/기록',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon:
+                      Icon(Icons.settings_rounded, color: AppColors.primary),
+                  label: '설정',
+                ),
+              ],
             ),
           ],
         ),
@@ -273,9 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
             ),
-
-            // 3. 하단 AdMob 배너 광고 영역
-            const AdBannerSlot(),
           ],
         ),
       ),

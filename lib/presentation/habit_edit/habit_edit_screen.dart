@@ -5,6 +5,7 @@ import '../../core/constants/app_icons.dart';
 import '../../core/utils/date_util.dart';
 import '../../models/habit.dart';
 import '../../providers/habit_provider.dart';
+import '../home/widgets/ad_banner_slot.dart';
 
 /// 습관 추가 및 편집 화면 (단순 체크형 & 목표 횟수형, 고정 알림 & 반복 간격 알림 지원)
 class HabitEditScreen extends StatefulWidget {
@@ -1041,6 +1042,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        top: false,
+        child: AdBannerSlot(),
       ),
     );
   }

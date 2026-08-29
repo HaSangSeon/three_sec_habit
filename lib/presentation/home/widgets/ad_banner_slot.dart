@@ -58,56 +58,66 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
   Widget build(BuildContext context) {
     if (_isAdLoaded && _bannerAd != null) {
       return Container(
-        width: _bannerAd!.size.width.toDouble(),
+        width: double.infinity,
         height: _bannerAd!.size.height.toDouble(),
         alignment: Alignment.center,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: AdWidget(ad: _bannerAd!),
+        color: context.bg,
+        child: SizedBox(
+          width: _bannerAd!.size.width.toDouble(),
+          height: _bannerAd!.size.height.toDouble(),
+          child: AdWidget(ad: _bannerAd!),
+        ),
       );
     }
 
     // 광고 로딩 중 또는 폴백 UI
     return Container(
       width: double.infinity,
-      height: 50,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.darkSurface.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.darkSurfaceLight.withValues(alpha: 0.5),
-          width: 1,
+      height: 52,
+      alignment: Alignment.center,
+      color: context.bg,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        decoration: BoxDecoration(
+          color: context.surface.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: context.surfaceBorder,
+            width: 0.8,
+          ),
         ),
-      ),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.darkSurfaceLight,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                'AD',
-                style: TextStyle(
-                  color: AppColors.darkTextMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'AD',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'AdMob 배너 광고 영역 (테스트)',
-              style: TextStyle(
-                color: AppColors.darkTextMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+              const SizedBox(width: 8),
+              Text(
+                'AdMob 배너 광고 영역',
+                style: TextStyle(
+                  color: context.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
