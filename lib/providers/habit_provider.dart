@@ -90,6 +90,11 @@ class HabitProvider extends ChangeNotifier {
         isCompleted: nextState,
         targetCount: 1,
       );
+      if (nextState) {
+        await NotificationService.cancelHabitReminder(habitId);
+      } else {
+        await NotificationService.scheduleHabitReminder(target.habit);
+      }
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during toggle: $e');
@@ -218,6 +223,11 @@ class HabitProvider extends ChangeNotifier {
         count: safeCount,
         targetCount: targetCount,
       );
+      if (isNowCompleted) {
+        await NotificationService.cancelHabitReminder(habitId);
+      } else {
+        await NotificationService.scheduleHabitReminder(target.habit);
+      }
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during setHabitCount: $e');
