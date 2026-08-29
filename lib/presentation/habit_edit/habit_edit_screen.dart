@@ -304,34 +304,37 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                                 : null,
                           ),
                           child: Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  type == HabitType.check
-                                      ? Icons.check_circle_outline_rounded
-                                      : Icons.water_drop_outlined,
-                                  size: 18,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : context.textSecondary,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  type == HabitType.check
-                                      ? '단순 체크형 (1회)'
-                                      : '목표 횟수형 (하루 N회)',
-                                  style: TextStyle(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    type == HabitType.check
+                                        ? Icons.check_circle_outline_rounded
+                                        : Icons.water_drop_outlined,
+                                    size: 18,
                                     color: isSelected
                                         ? AppColors.primary
                                         : context.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    type == HabitType.check
+                                        ? '단순 체크형 (1회)'
+                                        : '목표 횟수형 (하루 N회)',
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : context.textSecondary,
+                                      fontSize: 13,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),

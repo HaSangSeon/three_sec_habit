@@ -180,7 +180,10 @@ class _HabitCardItemState extends State<HabitCardItem>
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
-                          Row(
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               // 반복 주기 태그
                               Text(
@@ -193,8 +196,7 @@ class _HabitCardItemState extends State<HabitCardItem>
                               ),
                               // 간격 알림 뱃지 (간격 알림 설정 시 표시)
                               if (habit.reminderEnabled &&
-                                  habit.reminderType == ReminderType.interval) ...[
-                                const SizedBox(width: 6),
+                                  habit.reminderType == ReminderType.interval)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 5, vertical: 1.5),
@@ -212,10 +214,8 @@ class _HabitCardItemState extends State<HabitCardItem>
                                     ),
                                   ),
                                 ),
-                              ],
                               // 쉬는 날 뱃지
-                              if (widget.habitStatus.isRestDay) ...[
-                                const SizedBox(width: 6),
+                              if (widget.habitStatus.isRestDay)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 1.5),
@@ -234,10 +234,8 @@ class _HabitCardItemState extends State<HabitCardItem>
                                     ),
                                   ),
                                 ),
-                              ],
                               // 스트릭 뱃지
-                              if (streak > 0) ...[
-                                const SizedBox(width: 6),
+                              if (streak > 0)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
@@ -266,7 +264,6 @@ class _HabitCardItemState extends State<HabitCardItem>
                                     ],
                                   ),
                                 ),
-                              ],
                             ],
                           ),
                         ],
