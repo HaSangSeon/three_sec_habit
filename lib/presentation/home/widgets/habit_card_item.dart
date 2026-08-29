@@ -66,6 +66,32 @@ class _HabitCardItemState extends State<HabitCardItem>
   }
 
   void _handleTap() {
+    if (widget.habitStatus.isRestDay && !widget.habitStatus.isCompletedToday) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.beach_access_rounded,
+                  color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${widget.habitStatus.habit.title}은(는) 오늘은 쉬는 날입니다 🏖️',
+                  style: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(milliseconds: 1800),
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+
     try {
       HapticFeedback.lightImpact();
     } catch (_) {}
@@ -84,6 +110,9 @@ class _HabitCardItemState extends State<HabitCardItem>
   }
 
   void _handleDecrement(TapDownDetails _) {
+    if (widget.habitStatus.isRestDay && !widget.habitStatus.isCompletedToday) {
+      return;
+    }
     try {
       HapticFeedback.selectionClick();
     } catch (_) {}
@@ -97,6 +126,7 @@ class _HabitCardItemState extends State<HabitCardItem>
     final habit = widget.habitStatus.habit;
     final isCountType = habit.habitType == HabitType.count;
     final isDone = widget.habitStatus.isCompletedToday;
+    final isRestDay = widget.habitStatus.isRestDay && !isDone;
     final streak = widget.habitStatus.currentStreak;
     final habitColor = Color(habit.colorValue);
     final todayCount = widget.habitStatus.todayCount;
@@ -306,16 +336,23 @@ class _HabitCardItemState extends State<HabitCardItem>
                             shape: BoxShape.circle,
                             color: isDone
                                 ? AppColors.success
-                                : (context.isDarkMode
-                                    ? AppColors.darkBackground
-                                    : AppColors.lightBackground),
+                                : isRestDay
+                                    ? (context.isDarkMode
+                                        ? Colors.white.withValues(alpha: 0.04)
+                                        : Colors.black.withValues(alpha: 0.04))
+                                    : (context.isDarkMode
+                                        ? AppColors.darkBackground
+                                        : AppColors.lightBackground),
                             border: Border.all(
                               color: isDone
                                   ? AppColors.success
-                                  : isCountType
-                                      ? habitColor.withValues(alpha: 0.5)
-                                      : context.surfaceBorder,
-                              width: 2,
+                                  : isRestDay
+                                      ? context.surfaceBorder
+                                          .withValues(alpha: 0.6)
+                                      : isCountType
+                                          ? habitColor.withValues(alpha: 0.5)
+                                          : context.surfaceBorder,
+                              width: 1.8,
                             ),
                           ),
                           child: Center(
@@ -330,33 +367,41 @@ class _HabitCardItemState extends State<HabitCardItem>
                                       color: Colors.white,
                                       size: 28,
                                     )
-                                  : isCountType
-                                      ? Column(
-                                          key: ValueKey('count_$todayCount'),
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              '$todayCount',
-                                              style: TextStyle(
-                                                color: habitColor,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                            Text(
-                                              '+1',
-                                              style: TextStyle(
-                                                color: context.textMuted,
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ],
+                                  : isRestDay
+                                      ? Icon(
+                                          Icons.beach_access_rounded,
+                                          key: const ValueKey('rest_btn'),
+                                          color: context.textMuted
+                                              .withValues(alpha: 0.5),
+                                          size: 20,
                                         )
-                                      : const SizedBox.shrink(
-                                          key: ValueKey('unchecked'),
-                                        ),
+                                      : isCountType
+                                          ? Column(
+                                              key: ValueKey('count_$todayCount'),
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  '$todayCount',
+                                                  style: TextStyle(
+                                                    color: habitColor,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  '+1',
+                                                  style: TextStyle(
+                                                    color: context.textMuted,
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          : const SizedBox.shrink(
+                                              key: ValueKey('unchecked'),
+                                            ),
                             ),
                           ),
                         ),
