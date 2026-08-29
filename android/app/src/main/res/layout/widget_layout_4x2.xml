@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_4x2"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- 상단 헤더 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚡ 3초 습관 • 오늘 체크리스트"
+            android:textColor="#8B5CF6"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_4x2_progress_summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 / 0 완료"
+            android:textColor="#10B981"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
+        android:background="#334155" />
+
+    <!-- 습관 아이템 1 -->
+    <LinearLayout
+        android:id="@+id/widget_item_1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/widget_card_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/widget_title_1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="습관 1"
+            android:textColor="#F8FAFC"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_check_btn_1"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="○"
+            android:textColor="#8B5CF6"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 습관 아이템 2 -->
+    <LinearLayout
+        android:id="@+id/widget_item_2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/widget_card_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/widget_title_2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="습관 2"
+            android:textColor="#F8FAFC"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_check_btn_2"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="○"
+            android:textColor="#8B5CF6"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- 습관 아이템 3 -->
+    <LinearLayout
+        android:id="@+id/widget_item_3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_card_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:visibility="visible">
+
+        <TextView
+            android:id="@+id/widget_title_3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="습관 3"
+            android:textColor="#F8FAFC"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/widget_check_btn_3"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="○"
+            android:textColor="#8B5CF6"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

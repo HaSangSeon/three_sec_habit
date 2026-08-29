@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_2x2"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- 헤더: 앱 타이틀 & 3초 컷 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚡ 3초 습관"
+            android:textColor="#8B5CF6"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_2x2_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="오늘"
+            android:textColor="#94A3B8"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="8dp"
+        android:background="#334155" />
+
+    <!-- 달성률 숫자 강조 -->
+    <TextView
+        android:id="@+id/widget_2x2_progress_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="3 / 5"
+        android:textColor="#F8FAFC"
+        android:textSize="26sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_2x2_percent_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="60% 달성 완료"
+        android:textColor="#10B981"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+    <!-- 첫 번째 습관 즉시 체크 버튼 -->
+    <LinearLayout
+        android:id="@+id/widget_2x2_quick_check_btn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/widget_card_bg"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingVertical="6dp"
+        android:paddingHorizontal="8dp">
+
+        <TextView
+            android:id="@+id/widget_2x2_quick_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="빠른 체크하기"
+            android:textColor="#F8FAFC"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/widget_2x2_check_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✓"
+            android:textColor="#10B981"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">3초 습관</string>
+    <string name="widget_2x2_desc">오늘의 습관 빠른 달성 현황 (2x2)</string>
+    <string name="widget_4x2_desc">오늘의 습관 목록 및 즉시 체크 (4x2)</string>
+</resources>
