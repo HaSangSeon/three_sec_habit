@@ -169,36 +169,107 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.primary,
                           backgroundColor: context.surface,
                           onRefresh: () => habitProvider.loadHabits(),
-                          child: ListView.builder(
+                          child: ListView(
                             padding: const EdgeInsets.only(bottom: 24),
-                            itemCount: habitProvider.habits.length,
-                            itemBuilder: (context, index) {
-                              final habitStatus = habitProvider.habits[index];
-                              return HabitCardItem(
-                                habitStatus: habitStatus,
-                                onToggle: () {
-                                  if (habitStatus.habit.id != null) {
-                                    habitProvider
-                                        .toggleHabit(habitStatus.habit.id!);
-                                  }
-                                },
-                                onIncrement: () {
-                                  if (habitStatus.habit.id != null) {
-                                    habitProvider.incrementHabitCount(
-                                        habitStatus.habit.id!);
-                                  }
-                                },
-                                onDecrement: () {
-                                  if (habitStatus.habit.id != null) {
-                                    habitProvider.decrementHabitCount(
-                                        habitStatus.habit.id!);
-                                  }
-                                },
-                                onTapDetail: () {
-                                  _onEditHabit(habitStatus.habit);
-                                },
-                              );
-                            },
+                            children: [
+                              // 1) 오늘 실천할 습관 목록
+                              if (habitProvider.todayHabits.isNotEmpty) ...[
+                                ...habitProvider.todayHabits.map(
+                                  (habitStatus) => HabitCardItem(
+                                    habitStatus: habitStatus,
+                                    onToggle: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider
+                                            .toggleHabit(habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onIncrement: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider.incrementHabitCount(
+                                            habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onDecrement: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider.decrementHabitCount(
+                                            habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onTapDetail: () {
+                                      _onEditHabit(habitStatus.habit);
+                                    },
+                                  ),
+                                ),
+                              ] else ...[
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 24),
+                                  child: Center(
+                                    child: Text(
+                                      '오늘 예정된 습관이 모두 쉬는 날입니다! 🏖️',
+                                      style: TextStyle(
+                                        color: context.textMuted,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+
+                              // 2) 오늘 쉬는 날인 습관 목록
+                              if (habitProvider.restHabits.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 8),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.beach_access_rounded,
+                                        size: 16,
+                                        color: context.textMuted,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '오늘은 쉬는 습관 (${habitProvider.restHabits.length})',
+                                        style: TextStyle(
+                                          color: context.textMuted,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...habitProvider.restHabits.map(
+                                  (habitStatus) => HabitCardItem(
+                                    habitStatus: habitStatus,
+                                    onToggle: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider
+                                            .toggleHabit(habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onIncrement: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider.incrementHabitCount(
+                                            habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onDecrement: () {
+                                      if (habitStatus.habit.id != null) {
+                                        habitProvider.decrementHabitCount(
+                                            habitStatus.habit.id!);
+                                      }
+                                    },
+                                    onTapDetail: () {
+                                      _onEditHabit(habitStatus.habit);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
             ),

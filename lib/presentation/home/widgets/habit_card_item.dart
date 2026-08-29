@@ -213,6 +213,28 @@ class _HabitCardItemState extends State<HabitCardItem>
                                   ),
                                 ),
                               ],
+                              // 쉬는 날 뱃지
+                              if (widget.habitStatus.isRestDay) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: context.isDarkMode
+                                        ? Colors.white10
+                                        : Colors.black.withValues(alpha: 0.06),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '쉬는 날 🏖️',
+                                    style: TextStyle(
+                                      color: context.textMuted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               // 스트릭 뱃지
                               if (streak > 0) ...[
                                 const SizedBox(width: 6),

@@ -17,11 +17,15 @@ class HabitProvider extends ChangeNotifier {
   HabitProvider({HabitDao? habitDao}) : _habitDao = habitDao ?? HabitDao();
 
   // Getters
-  List<HabitWithTodayStatus> get habits => _habits;
+  List<HabitWithTodayStatus> get habits => _habits; // 전체 습관
+  List<HabitWithTodayStatus> get todayHabits =>
+      _habits.where((h) => h.isScheduledToday || h.isCompletedToday).toList();
+  List<HabitWithTodayStatus> get restHabits =>
+      _habits.where((h) => h.isRestDay).toList();
   bool get isLoading => _isLoading;
   DateTime get selectedDate => _selectedDate;
-  int get completedCount => _habits.where((h) => h.isCompletedToday).length;
-  int get totalCount => _habits.length;
+  int get completedCount => todayHabits.where((h) => h.isCompletedToday).length;
+  int get totalCount => todayHabits.length;
   double get progressRate =>
       totalCount > 0 ? (completedCount / totalCount) : 0.0;
   bool get isAllCompleted => totalCount > 0 && completedCount == totalCount;

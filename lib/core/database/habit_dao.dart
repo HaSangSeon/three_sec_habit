@@ -220,25 +220,24 @@ class HabitDao {
       final todayCount = log?.count ?? 0;
       final isCompleted = log?.isCompleted ?? false;
 
-      if (isScheduled || isCompleted || todayCount > 0) {
-        // 스트릭 및 달성률 계산
-        final completedDates = await getCompletedDatesForHabit(habit.id!);
-        final streakResult = StreakCalculator.calculate(
-          habit: habit,
-          completedDates: completedDates,
-          referenceDate: targetDate,
-        );
+      // 스트릭 및 달성률 계산
+      final completedDates = await getCompletedDatesForHabit(habit.id!);
+      final streakResult = StreakCalculator.calculate(
+        habit: habit,
+        completedDates: completedDates,
+        referenceDate: targetDate,
+      );
 
-        results.add(HabitWithTodayStatus(
-          habit: habit,
-          todayCount: todayCount,
-          isCompletedToday: isCompleted,
-          currentStreak: streakResult.currentStreak,
-          bestStreak: streakResult.bestStreak,
-          totalCompletedCount: streakResult.totalCount,
-          completionRate: streakResult.completionRate,
-        ));
-      }
+      results.add(HabitWithTodayStatus(
+        habit: habit,
+        todayCount: todayCount,
+        isCompletedToday: isCompleted,
+        isScheduledToday: isScheduled,
+        currentStreak: streakResult.currentStreak,
+        bestStreak: streakResult.bestStreak,
+        totalCompletedCount: streakResult.totalCount,
+        completionRate: streakResult.completionRate,
+      ));
     }
 
     return results;
