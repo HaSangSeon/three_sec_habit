@@ -79,22 +79,37 @@ class HabitDao {
   }
 
   // ==========================================
-  // 2. 체크 기록 (Habit Logs) 처리
+  // 2. 체크 및 카운트 기록 (Habit Logs) 처리
   // ==========================================
 
+  /// 특정 습관의 특정 날짜 로그 조회
+  Future<HabitLog?> getHabitLogForDate(int habitId, String date) async {
+    final db = await _db;
+    final maps = await db.query(
+      AppConstants.tableHabitLogs,
+      where: 'habit_id = ? AND date = ?',
+      whereArgs: [habitId, date],
+      limit: 1,
+    );
+    if (maps.isNotEmpty) {
+      return HabitLog.fromMap(maps.first);
+    }
+    return null;
+  }
+
   /// 습관 체크 토글 (체크 또는 해제)
-  /// - isCompleted == true: 레코드 삽입/갱신
-  /// - isCompleted == false: 레코드 삭제
   Future<void> toggleCheck({
     required int habitId,
     required String date,
     required bool isCompleted,
+    int targetCount = 1,
   }) async {
     final db = await _db;
     if (isCompleted) {
       final log = HabitLog(
         habitId: habitId,
         date: date,
+        count: targetCount,
         isCompleted: true,
         completedAt: DateTime.now().toIso8601String(),
       );
@@ -112,7 +127,38 @@ class HabitDao {
     }
   }
 
-  /// 특정 날짜에 완료된 습관 ID 집합 조회 (초고속 O(1) 인메모리 비교용)
+  /// 카운트형 습관 수치 직접 설정 (물 1잔, 2잔 등)
+  Future<void> setHabitCount({
+    required int habitId,
+    required String date,
+    required int count,
+    required int targetCount,
+  }) async {
+    final db = await _db;
+    if (count <= 0) {
+      await db.delete(
+        AppConstants.tableHabitLogs,
+        where: 'habit_id = ? AND date = ?',
+        whereArgs: [habitId, date],
+      );
+    } else {
+      final isCompleted = count >= targetCount;
+      final log = HabitLog(
+        habitId: habitId,
+        date: date,
+        count: count,
+        isCompleted: isCompleted,
+        completedAt: DateTime.now().toIso8601String(),
+      );
+      await db.insert(
+        AppConstants.tableHabitLogs,
+        log.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  /// 특정 날짜에 완료된(목표 달성) 습관 ID 집합 조회
   Future<Set<int>> getCompletedHabitIdsForDate(String date) async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -124,7 +170,23 @@ class HabitDao {
     return maps.map((m) => m['habit_id'] as int).toSet();
   }
 
-  /// 특정 습관의 완료된 전체 날짜 집합 조회 (스트릭 계산용)
+  /// 특정 날짜의 모든 습관 로그 맵 조회 (habitId -> HabitLog)
+  Future<Map<int, HabitLog>> getHabitLogsMapForDate(String date) async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.tableHabitLogs,
+      where: 'date = ?',
+      whereArgs: [date],
+    );
+    final result = <int, HabitLog>{};
+    for (final map in maps) {
+      final log = HabitLog.fromMap(map);
+      result[log.habitId] = log;
+    }
+    return result;
+  }
+
+  /// 특정 습관의 목표를 완료한 전체 날짜 집합 조회 (스트릭 계산용)
   Future<Set<String>> getCompletedDatesForHabit(int habitId) async {
     final db = await _db;
     final List<Map<String, dynamic>> maps = await db.query(
@@ -141,23 +203,24 @@ class HabitDao {
   // 3. 종합 뷰 및 통계 쿼리
   // ==========================================
 
-  /// 특정 날짜 기준 전체 습관 목록과 완료 상태 + 스트릭 일괄 조회
+  /// 특정 날짜 기준 전체 습관 목록과 완료 상태 + 카운트 + 스트릭 일괄 조회
   Future<List<HabitWithTodayStatus>> getHabitsWithStatusForDate(
       DateTime targetDate) async {
     final dateStr = DateUtil.formatDate(targetDate);
     final habits = await getAllHabits(includeArchived: false);
-    final completedIds = await getCompletedHabitIdsForDate(dateStr);
+    final logsMap = await getHabitLogsMapForDate(dateStr);
 
     final results = <HabitWithTodayStatus>[];
 
     for (final habit in habits) {
       if (habit.id == null) continue;
 
-      // 해당 날짜에 예정된 습관이거나, 이미 완료된 경우 목록에 포함
+      final log = logsMap[habit.id];
       final isScheduled = habit.isScheduledForDate(targetDate);
-      final isCompleted = completedIds.contains(habit.id);
+      final todayCount = log?.count ?? 0;
+      final isCompleted = log?.isCompleted ?? false;
 
-      if (isScheduled || isCompleted) {
+      if (isScheduled || isCompleted || todayCount > 0) {
         // 스트릭 및 달성률 계산
         final completedDates = await getCompletedDatesForHabit(habit.id!);
         final streakResult = StreakCalculator.calculate(
@@ -168,6 +231,7 @@ class HabitDao {
 
         results.add(HabitWithTodayStatus(
           habit: habit,
+          todayCount: todayCount,
           isCompletedToday: isCompleted,
           currentStreak: streakResult.currentStreak,
           bestStreak: streakResult.bestStreak,
@@ -198,32 +262,9 @@ class HabitDao {
     ''', [startDate, endDate]);
 
     final result = <String, int>{};
-    for (final row in maps) {
-      final date = row['date'] as String;
-      final count = (row['count'] as num).toInt();
-      result[date] = count;
+    for (final map in maps) {
+      result[map['date'] as String] = map['count'] as int;
     }
     return result;
-  }
-
-  /// 특정 습관의 월별 완료 날짜 집합 조회
-  Future<Set<String>> getHabitCompletedDatesForMonth(
-      int habitId, int year, int month) async {
-    final db = await _db;
-    final startDate =
-        '$year-${month.toString().padLeft(2, '0')}-01';
-    final nextMonth = month == 12 ? 1 : month + 1;
-    final nextYear = month == 12 ? year + 1 : year;
-    final endDate =
-        '$nextYear-${nextMonth.toString().padLeft(2, '0')}-01';
-
-    final List<Map<String, dynamic>> maps = await db.query(
-      AppConstants.tableHabitLogs,
-      columns: ['date'],
-      where: 'habit_id = ? AND is_completed = 1 AND date >= ? AND date < ?',
-      whereArgs: [habitId, startDate, endDate],
-    );
-
-    return maps.map((m) => m['date'] as String).toSet();
   }
 }

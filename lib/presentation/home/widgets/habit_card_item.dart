@@ -2,18 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_icons.dart';
+import '../../../models/habit.dart';
 import '../../../models/habit_with_today_status.dart';
 
-/// 습관 카드 아이템 ("3초 컷" 손맛 인터랙션 + 스케일 바운스 애니메이션)
+/// 습관 카드 아이템 ("3초 컷" 손맛 인터랙션 + 스케일 바운스 애니메이션 + 카운트형 지원)
 class HabitCardItem extends StatefulWidget {
   final HabitWithTodayStatus habitStatus;
   final VoidCallback onToggle;
+  final VoidCallback? onIncrement;
+  final VoidCallback? onDecrement;
   final VoidCallback? onTapDetail;
 
   const HabitCardItem({
     super.key,
     required this.habitStatus,
     required this.onToggle,
+    this.onIncrement,
+    this.onDecrement,
     this.onTapDetail,
   });
 
@@ -34,7 +39,7 @@ class _HabitCardItemState extends State<HabitCardItem>
       duration: const Duration(milliseconds: 220),
     );
 
-    // 손맛을 위한 쫀득한 바운스 커브 (1.0 -> 0.85 -> 1.1 -> 1.0)
+    // 손맛을 위한 쫀득한 바운스 커브
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(begin: 1.0, end: 0.86)
@@ -60,25 +65,43 @@ class _HabitCardItemState extends State<HabitCardItem>
     super.dispose();
   }
 
-  void _handleTapCheck() {
-    // 1. 가벼운 햅틱 피드백 트리거 (손맛)
+  void _handleTap() {
     try {
       HapticFeedback.lightImpact();
     } catch (_) {}
 
-    // 2. 바운스 애니메이션 실행
     _bounceController.forward(from: 0.0);
 
-    // 3. 토글 콜백 호출 (0ms 낙관적 업데이트)
-    widget.onToggle();
+    if (widget.habitStatus.habit.habitType == HabitType.count) {
+      if (widget.onIncrement != null) {
+        widget.onIncrement!();
+      } else {
+        widget.onToggle();
+      }
+    } else {
+      widget.onToggle();
+    }
+  }
+
+  void _handleDecrement(TapDownDetails _) {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    if (widget.onDecrement != null) {
+      widget.onDecrement!();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final habit = widget.habitStatus.habit;
+    final isCountType = habit.habitType == HabitType.count;
     final isDone = widget.habitStatus.isCompletedToday;
     final streak = widget.habitStatus.currentStreak;
     final habitColor = Color(habit.colorValue);
+    final todayCount = widget.habitStatus.todayCount;
+    final targetCount = habit.targetCount;
+    final progress = widget.habitStatus.todayProgress;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
@@ -110,140 +133,250 @@ class _HabitCardItemState extends State<HabitCardItem>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: _handleTapCheck, // 카드 어디를 눌러도 3초 컷 빠른 체크 가능
+          onTap: _handleTap,
           onLongPress: widget.onTapDetail,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
+            child: Column(
               children: [
-                // 1. 습관 아이콘 컨테이너
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: habitColor.withValues(alpha: isDone ? 0.15 : 0.25),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    AppIcons.getIcon(habit.iconName),
-                    color: habitColor,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // 2. 습관 이름 및 메타 정보 (반복 주기, 스트릭)
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        habit.title,
-                        style: TextStyle(
-                          color: isDone
-                              ? context.textSecondary
-                              : context.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          decoration:
-                              isDone ? TextDecoration.lineThrough : null,
-                          decorationColor: context.textMuted,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    // 1. 습관 아이콘 컨테이너
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: habitColor.withValues(
+                            alpha: isDone ? 0.15 : 0.25),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      child: Icon(
+                        AppIcons.getIcon(habit.iconName),
+                        color: habitColor,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+
+                    // 2. 습관 이름 및 메타 정보
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 반복 주기 태그
                           Text(
-                            habit.repeatSummary,
+                            habit.title,
                             style: TextStyle(
-                              color: context.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              color: isDone
+                                  ? context.textSecondary
+                                  : context.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              decoration: (isDone && !isCountType)
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              decorationColor: context.textMuted,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          // 스트릭 뱃지 (연속 기록이 있을 때만 표시)
-                          if (streak > 0) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.fireOrange.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              // 반복 주기 태그
+                              Text(
+                                habit.repeatSummary,
+                                style: TextStyle(
+                                  color: context.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.local_fire_department_rounded,
-                                    size: 12,
-                                    color: AppColors.fireOrange,
+                              // 간격 알림 뱃지 (간격 알림 설정 시 표시)
+                              if (habit.reminderEnabled &&
+                                  habit.reminderType == ReminderType.interval) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    '$streak일 연속',
+                                  child: Text(
+                                    '${(habit.reminderIntervalMinutes ?? 60) ~/ 60}시간마다',
                                     style: const TextStyle(
-                                      color: AppColors.fireOrange,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                ),
+                              ],
+                              // 스트릭 뱃지
+                              if (streak > 0) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.fireOrange
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.local_fire_department_rounded,
+                                        size: 12,
+                                        color: AppColors.fireOrange,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '$streak일 연속',
+                                        style: const TextStyle(
+                                          color: AppColors.fireOrange,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
 
-                // 3. 우측 대형 체크 버튼 (손맛 애니메이션 적용)
-                ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: GestureDetector(
-                    onTap: _handleTapCheck,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDone
-                            ? AppColors.success
-                            : (context.isDarkMode
-                                ? AppColors.darkBackground
-                                : AppColors.lightBackground),
-                        border: Border.all(
-                          color: isDone
-                              ? AppColors.success
-                              : context.surfaceBorder,
-                          width: 2,
+                    // 3. 카운트형 감소 버튼 (오늘 카운트가 1 이상일 때)
+                    if (isCountType && todayCount > 0 && !isDone) ...[
+                      GestureDetector(
+                        onTapDown: _handleDecrement,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: context.bg,
+                            border: Border.all(color: context.surfaceBorder),
+                          ),
+                          child: Icon(
+                            Icons.remove,
+                            size: 18,
+                            color: context.textSecondary,
+                          ),
                         ),
                       ),
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          transitionBuilder: (child, anim) =>
-                              ScaleTransition(scale: anim, child: child),
-                          child: isDone
-                              ? const Icon(
-                                  Icons.check_rounded,
-                                  key: ValueKey('checked'),
-                                  color: Colors.white,
-                                  size: 26,
-                                )
-                              : const SizedBox.shrink(
-                                  key: ValueKey('unchecked'),
-                                ),
+                    ],
+
+                    // 4. 우측 대형 체크 / 카운트 버튼
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: GestureDetector(
+                        onTap: _handleTap,
+                        behavior: HitTestBehavior.opaque,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDone
+                                ? AppColors.success
+                                : (context.isDarkMode
+                                    ? AppColors.darkBackground
+                                    : AppColors.lightBackground),
+                            border: Border.all(
+                              color: isDone
+                                  ? AppColors.success
+                                  : isCountType
+                                      ? habitColor.withValues(alpha: 0.5)
+                                      : context.surfaceBorder,
+                              width: 2,
+                            ),
+                          ),
+                          child: Center(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 180),
+                              transitionBuilder: (child, anim) =>
+                                  ScaleTransition(scale: anim, child: child),
+                              child: isDone
+                                  ? const Icon(
+                                      Icons.check_rounded,
+                                      key: ValueKey('checked'),
+                                      color: Colors.white,
+                                      size: 28,
+                                    )
+                                  : isCountType
+                                      ? Column(
+                                          key: ValueKey('count_$todayCount'),
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              '$todayCount',
+                                              style: TextStyle(
+                                                color: habitColor,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                            Text(
+                                              '+1',
+                                              style: TextStyle(
+                                                color: context.textMuted,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : const SizedBox.shrink(
+                                          key: ValueKey('unchecked'),
+                                        ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
+
+                // 카운트형 습관 진행 바
+                if (isCountType) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 6,
+                            backgroundColor:
+                                habitColor.withValues(alpha: 0.15),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isDone ? AppColors.success : habitColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '$todayCount / $targetCount ${habit.unit}',
+                        style: TextStyle(
+                          color: isDone ? AppColors.success : habitColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

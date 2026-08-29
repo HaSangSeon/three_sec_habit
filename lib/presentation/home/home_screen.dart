@@ -182,6 +182,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                         .toggleHabit(habitStatus.habit.id!);
                                   }
                                 },
+                                onIncrement: () {
+                                  if (habitStatus.habit.id != null) {
+                                    habitProvider.incrementHabitCount(
+                                        habitStatus.habit.id!);
+                                  }
+                                },
+                                onDecrement: () {
+                                  if (habitStatus.habit.id != null) {
+                                    habitProvider.decrementHabitCount(
+                                        habitStatus.habit.id!);
+                                  }
+                                },
                                 onTapDetail: () {
                                   _onEditHabit(habitStatus.habit);
                                 },

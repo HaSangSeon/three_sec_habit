@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/database/habit_dao.dart';
-import '../../core/services/ad_service.dart';
 import '../../providers/habit_provider.dart';
 import 'widgets/grass_heatmap_calendar.dart';
 import 'widgets/habit_stat_card.dart';

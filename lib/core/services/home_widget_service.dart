@@ -17,15 +17,29 @@ Future<void> backgroundCallback(Uri? uri) async {
       if (habitId != null) {
         final dao = HabitDao();
         final todayStr = DateUtil.today();
-        final completedIds = await dao.getCompletedHabitIdsForDate(todayStr);
-        final isCurrentlyCompleted = completedIds.contains(habitId);
+        final habit = await dao.getHabitById(habitId);
 
-        // 토글 실행
-        await dao.toggleCheck(
-          habitId: habitId,
-          date: todayStr,
-          isCompleted: !isCurrentlyCompleted,
-        );
+        if (habit != null && habit.habitType == HabitType.count) {
+          final log = await dao.getHabitLogForDate(habitId, todayStr);
+          final currentCount = log?.count ?? 0;
+          final nextCount =
+              currentCount >= habit.targetCount ? 0 : currentCount + 1;
+          await dao.setHabitCount(
+            habitId: habitId,
+            date: todayStr,
+            count: nextCount,
+            targetCount: habit.targetCount,
+          );
+        } else {
+          final completedIds = await dao.getCompletedHabitIdsForDate(todayStr);
+          final isCurrentlyCompleted = completedIds.contains(habitId);
+
+          await dao.toggleCheck(
+            habitId: habitId,
+            date: todayStr,
+            isCompleted: !isCurrentlyCompleted,
+          );
+        }
 
         // 위젯 최신 데이터 재동기화
         final habits = await dao.getHabitsWithStatusForDate(DateTime.now());
@@ -62,13 +76,15 @@ class HomeWidgetService {
       final percent = total > 0 ? ((completed / total) * 100).toInt() : 0;
 
       // 1. 공통 요약 데이터
-      await HomeWidget.saveWidgetData<String>('widget_progress_text', '$completed / $total');
-      await HomeWidget.saveWidgetData<String>('widget_percent_text', '$percent% 완료');
+      await HomeWidget.saveWidgetData<String>(
+          'widget_progress_text', '$completed / $total');
+      await HomeWidget.saveWidgetData<String>(
+          'widget_percent_text', '$percent% 완료');
       await HomeWidget.saveWidgetData<String>('widget_date_str', todayStr);
       await HomeWidget.saveWidgetData<String>(
           'widget_4x2_summary', '$completed / $total 완료 ($percent%)');
 
-      // 2. 2x2 위젯용 상단 습관 (아직 미완료된 첫 번째 습관 우선, 없으면 첫 번째)
+      // 2. 2x2 위젯용 상단 습관
       final topHabit = habits.firstWhere(
         (h) => !h.isCompletedToday,
         orElse: () => habits.isNotEmpty
@@ -90,9 +106,12 @@ class HomeWidgetService {
       for (int i = 0; i < 3; i++) {
         if (i < habits.length) {
           final h = habits[i];
-          await HomeWidget.saveWidgetData<int>('widget_habit_id_$i', h.habit.id ?? -1);
-          await HomeWidget.saveWidgetData<String>('widget_habit_title_$i', h.habit.title);
-          await HomeWidget.saveWidgetData<bool>('widget_habit_done_$i', h.isCompletedToday);
+          await HomeWidget.saveWidgetData<int>(
+              'widget_habit_id_$i', h.habit.id ?? -1);
+          await HomeWidget.saveWidgetData<String>(
+              'widget_habit_title_$i', h.habit.title);
+          await HomeWidget.saveWidgetData<bool>(
+              'widget_habit_done_$i', h.isCompletedToday);
         } else {
           await HomeWidget.saveWidgetData<int>('widget_habit_id_$i', -1);
           await HomeWidget.saveWidgetData<String>('widget_habit_title_$i', '');

@@ -5,7 +5,6 @@ import 'package:three_sec_habit/core/database/habit_dao.dart';
 import 'package:three_sec_habit/models/habit.dart';
 
 void main() {
-  // sqflite_common_ffi 초기화
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
@@ -13,11 +12,10 @@ void main() {
   late HabitDao habitDao;
 
   setUp(() async {
-    // 인메모리 SQLite DB 생성
     db = await databaseFactory.openDatabase(
       inMemoryDatabasePath,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onConfigure: (db) async {
           await db.execute('PRAGMA foreign_keys = ON');
         },
@@ -28,10 +26,17 @@ void main() {
               title TEXT NOT NULL,
               icon_name TEXT NOT NULL DEFAULT 'check_circle',
               color_value INTEGER NOT NULL DEFAULT 4287332342,
+              habit_type TEXT NOT NULL DEFAULT 'check',
+              target_count INTEGER NOT NULL DEFAULT 1,
+              unit TEXT NOT NULL DEFAULT '회',
               repeat_type TEXT NOT NULL DEFAULT 'daily',
               repeat_days TEXT,
               repeat_count INTEGER,
+              reminder_type TEXT NOT NULL DEFAULT 'fixed',
               reminder_time TEXT,
+              reminder_interval_minutes INTEGER,
+              reminder_start_time TEXT,
+              reminder_end_time TEXT,
               reminder_enabled INTEGER NOT NULL DEFAULT 0,
               created_at TEXT NOT NULL,
               is_archived INTEGER NOT NULL DEFAULT 0
@@ -43,6 +48,7 @@ void main() {
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               habit_id INTEGER NOT NULL,
               date TEXT NOT NULL,
+              count INTEGER NOT NULL DEFAULT 1,
               is_completed INTEGER NOT NULL DEFAULT 1,
               completed_at TEXT NOT NULL,
               FOREIGN KEY (habit_id) REFERENCES habits (id) ON DELETE CASCADE
@@ -77,7 +83,12 @@ void main() {
         title: '아침 기상 물 한 잔',
         iconName: 'water_drop',
         colorValue: 0xFF06B6D4,
+        habitType: HabitType.count,
+        targetCount: 8,
+        unit: '잔',
         repeatType: RepeatType.daily,
+        reminderType: ReminderType.interval,
+        reminderIntervalMinutes: 60,
       );
 
       final id1 = await habitDao.insertHabit(habit1);
@@ -87,7 +98,11 @@ void main() {
       expect(fetched, isNotNull);
       expect(fetched!.title, '아침 기상 물 한 잔');
       expect(fetched.iconName, 'water_drop');
-      expect(fetched.repeatType, RepeatType.daily);
+      expect(fetched.habitType, HabitType.count);
+      expect(fetched.targetCount, 8);
+      expect(fetched.unit, '잔');
+      expect(fetched.reminderType, ReminderType.interval);
+      expect(fetched.reminderIntervalMinutes, 60);
 
       final all = await habitDao.getAllHabits();
       expect(all.length, 1);
@@ -97,19 +112,17 @@ void main() {
       final habit = Habit(title: '임시 습관');
       final id = await habitDao.insertHabit(habit);
 
-      // 수정
       final updated = habit.copyWith(id: id, title: '수정된 습관');
       await habitDao.updateHabit(updated);
 
       final fetched = await habitDao.getHabitById(id);
       expect(fetched!.title, '수정된 습관');
 
-      // 체크 로그 추가
-      await habitDao.toggleCheck(habitId: id, date: '2026-08-29', isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id, date: '2026-08-29', isCompleted: true);
       final logsBefore = await habitDao.getCompletedDatesForHabit(id);
       expect(logsBefore.length, 1);
 
-      // 습관 삭제 시 Cascade로 로그도 함께 자동 삭제되는지 확인
       await habitDao.deleteHabit(id);
       final fetchedAfter = await habitDao.getHabitById(id);
       expect(fetchedAfter, isNull);
@@ -122,31 +135,63 @@ void main() {
       final id = await habitDao.insertHabit(Habit(title: '영양제 먹기'));
       const date = '2026-08-29';
 
-      // 체크
-      await habitDao.toggleCheck(habitId: id, date: date, isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id, date: date, isCompleted: true);
       var completedIds = await habitDao.getCompletedHabitIdsForDate(date);
       expect(completedIds.contains(id), isTrue);
 
-      // 체크 해제
-      await habitDao.toggleCheck(habitId: id, date: date, isCompleted: false);
+      await habitDao.toggleCheck(
+          habitId: id, date: date, isCompleted: false);
       completedIds = await habitDao.getCompletedHabitIdsForDate(date);
       expect(completedIds.contains(id), isFalse);
 
-      // 재체크 (중복 insert 에러 없이 정상 처리되는지)
-      await habitDao.toggleCheck(habitId: id, date: date, isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id, date: date, isCompleted: true);
       completedIds = await habitDao.getCompletedHabitIdsForDate(date);
       expect(completedIds.contains(id), isTrue);
     });
 
-    test('4. 월간 히트맵 잔디밭 데이터 집계 쿼리 검증', () async {
+    test('4. 카운트형 습관(물 8잔) 카운트 증감 및 목표 달성 판정 검증', () async {
+      final id = await habitDao.insertHabit(Habit(
+        title: '물 8잔 마시기',
+        habitType: HabitType.count,
+        targetCount: 8,
+        unit: '잔',
+      ));
+      const date = '2026-08-29';
+
+      // 1. 물 3잔 마심 -> 미완료
+      await habitDao.setHabitCount(
+          habitId: id, date: date, count: 3, targetCount: 8);
+      var log = await habitDao.getHabitLogForDate(id, date);
+      expect(log, isNotNull);
+      expect(log!.count, 3);
+      expect(log.isCompleted, isFalse);
+
+      var completedIds = await habitDao.getCompletedHabitIdsForDate(date);
+      expect(completedIds.contains(id), isFalse);
+
+      // 2. 물 8잔 마심 -> 완료
+      await habitDao.setHabitCount(
+          habitId: id, date: date, count: 8, targetCount: 8);
+      log = await habitDao.getHabitLogForDate(id, date);
+      expect(log!.count, 8);
+      expect(log.isCompleted, isTrue);
+
+      completedIds = await habitDao.getCompletedHabitIdsForDate(date);
+      expect(completedIds.contains(id), isTrue);
+    });
+
+    test('5. 월간 히트맵 잔디밭 데이터 집계 쿼리 검증', () async {
       final id1 = await habitDao.insertHabit(Habit(title: '습관 1'));
       final id2 = await habitDao.insertHabit(Habit(title: '습관 2'));
 
-      // 8월 10일에 습관1 완료
-      await habitDao.toggleCheck(habitId: id1, date: '2026-08-10', isCompleted: true);
-      // 8월 15일에 습관1, 2 둘 다 완료
-      await habitDao.toggleCheck(habitId: id1, date: '2026-08-15', isCompleted: true);
-      await habitDao.toggleCheck(habitId: id2, date: '2026-08-15', isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id1, date: '2026-08-10', isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id1, date: '2026-08-15', isCompleted: true);
+      await habitDao.toggleCheck(
+          habitId: id2, date: '2026-08-15', isCompleted: true);
 
       final heatmap = await habitDao.getMonthlyHeatmapLogs(2026, 8);
       expect(heatmap['2026-08-10'], 1);

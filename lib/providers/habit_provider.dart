@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../core/database/habit_dao.dart';
+import '../core/services/home_widget_service.dart';
+import '../core/services/notification_service.dart';
 import '../core/utils/date_util.dart';
 import '../models/habit.dart';
 import '../models/habit_with_today_status.dart';
-
-import '../core/services/home_widget_service.dart';
 
 /// 습관 상태 관리 프로바이더 (3초 컷 반응성을 위한 낙관적 UI 업데이트 적용)
 class HabitProvider extends ChangeNotifier {
@@ -14,8 +14,7 @@ class HabitProvider extends ChangeNotifier {
   bool _isLoading = false;
   DateTime _selectedDate = DateTime.now();
 
-  HabitProvider({HabitDao? habitDao})
-      : _habitDao = habitDao ?? HabitDao();
+  HabitProvider({HabitDao? habitDao}) : _habitDao = habitDao ?? HabitDao();
 
   // Getters
   List<HabitWithTodayStatus> get habits => _habits;
@@ -23,7 +22,8 @@ class HabitProvider extends ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   int get completedCount => _habits.where((h) => h.isCompletedToday).length;
   int get totalCount => _habits.length;
-  double get progressRate => totalCount > 0 ? (completedCount / totalCount) : 0.0;
+  double get progressRate =>
+      totalCount > 0 ? (completedCount / totalCount) : 0.0;
   bool get isAllCompleted => totalCount > 0 && completedCount == totalCount;
 
   /// 초기 습관 목록 로드 (앱 실행 또는 날짜 변경 시)
@@ -46,23 +46,37 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  /// 습관 체크 토글 (0ms 즉각 반응 낙관적 UI 업데이트)
+  /// 습관 체크 토글 (단순 체크형 및 카운트형 지원)
   Future<void> toggleHabit(int habitId) async {
     final index = _habits.indexWhere((h) => h.habit.id == habitId);
     if (index == -1) return;
 
     final target = _habits[index];
-    final nextState = !target.isCompletedToday;
     final dateStr = DateUtil.formatDate(_selectedDate);
 
-    // 1. [낙관적 업데이트] 즉시 메모리 상태 변경 후 UI 리빌드 (손맛 극대화)
+    if (target.habit.habitType == HabitType.count) {
+      // 카운트형 습관: 이미 목표 달성 상태면 0으로 리셋, 아니면 +1 증가
+      if (target.isCompletedToday) {
+        await setHabitCount(habitId, 0);
+      } else {
+        await incrementHabitCount(habitId, step: 1);
+      }
+      return;
+    }
+
+    // 단순 체크형 습관
+    final nextState = !target.isCompletedToday;
+    final newTodayCount = nextState ? 1 : 0;
     final newStreak = nextState
         ? target.currentStreak + 1
         : (target.currentStreak > 0 ? target.currentStreak - 1 : 0);
-    final newBest = newStreak > target.bestStreak ? newStreak : target.bestStreak;
+    final newBest =
+        newStreak > target.bestStreak ? newStreak : target.bestStreak;
 
+    // 1. [낙관적 업데이트] 즉시 메모리 상태 변경
     _habits[index] = target.copyWith(
       isCompletedToday: nextState,
+      todayCount: newTodayCount,
       currentStreak: newStreak,
       bestStreak: newBest,
     );
@@ -74,11 +88,139 @@ class HabitProvider extends ChangeNotifier {
         habitId: habitId,
         date: dateStr,
         isCompleted: nextState,
+        targetCount: 1,
       );
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during toggle: $e');
-      // 오류 발생 시 롤백
+      _habits[index] = target;
+      notifyListeners();
+    }
+  }
+
+  /// 카운트형 습관 횟수 증가 (+1 등)
+  Future<void> incrementHabitCount(int habitId, {int step = 1}) async {
+    final index = _habits.indexWhere((h) => h.habit.id == habitId);
+    if (index == -1) return;
+
+    final target = _habits[index];
+    final dateStr = DateUtil.formatDate(_selectedDate);
+    final newCount = target.todayCount + step;
+    final targetCount = target.habit.targetCount;
+    final isNowCompleted = newCount >= targetCount;
+    final wasCompleted = target.isCompletedToday;
+
+    int newStreak = target.currentStreak;
+    if (!wasCompleted && isNowCompleted) {
+      newStreak += 1;
+    }
+    final newBest =
+        newStreak > target.bestStreak ? newStreak : target.bestStreak;
+
+    // 낙관적 업데이트
+    _habits[index] = target.copyWith(
+      todayCount: newCount,
+      isCompletedToday: isNowCompleted,
+      currentStreak: newStreak,
+      bestStreak: newBest,
+    );
+    notifyListeners();
+
+    try {
+      await _habitDao.setHabitCount(
+        habitId: habitId,
+        date: dateStr,
+        count: newCount,
+        targetCount: targetCount,
+      );
+      HomeWidgetService.updateWidgetData(_habits);
+    } catch (e) {
+      debugPrint('DB Error during increment: $e');
+      _habits[index] = target;
+      notifyListeners();
+    }
+  }
+
+  /// 카운트형 습관 횟수 감소 (-1 등)
+  Future<void> decrementHabitCount(int habitId, {int step = 1}) async {
+    final index = _habits.indexWhere((h) => h.habit.id == habitId);
+    if (index == -1) return;
+
+    final target = _habits[index];
+    if (target.todayCount <= 0) return;
+
+    final dateStr = DateUtil.formatDate(_selectedDate);
+    final newCount = (target.todayCount - step).clamp(0, 9999);
+    final targetCount = target.habit.targetCount;
+    final isNowCompleted = newCount >= targetCount;
+    final wasCompleted = target.isCompletedToday;
+
+    int newStreak = target.currentStreak;
+    if (wasCompleted && !isNowCompleted) {
+      newStreak = (newStreak > 0) ? newStreak - 1 : 0;
+    }
+
+    _habits[index] = target.copyWith(
+      todayCount: newCount,
+      isCompletedToday: isNowCompleted,
+      currentStreak: newStreak,
+    );
+    notifyListeners();
+
+    try {
+      await _habitDao.setHabitCount(
+        habitId: habitId,
+        date: dateStr,
+        count: newCount,
+        targetCount: targetCount,
+      );
+      HomeWidgetService.updateWidgetData(_habits);
+    } catch (e) {
+      debugPrint('DB Error during decrement: $e');
+      _habits[index] = target;
+      notifyListeners();
+    }
+  }
+
+  /// 카운트형 습관 횟수 임의 설정
+  Future<void> setHabitCount(int habitId, int count) async {
+    final index = _habits.indexWhere((h) => h.habit.id == habitId);
+    if (index == -1) return;
+
+    final target = _habits[index];
+    final dateStr = DateUtil.formatDate(_selectedDate);
+    final safeCount = count.clamp(0, 9999);
+    final targetCount = target.habit.targetCount;
+    final isNowCompleted = safeCount >= targetCount;
+    final wasCompleted = target.isCompletedToday;
+
+    int newStreak = target.currentStreak;
+    if (!wasCompleted && isNowCompleted) {
+      newStreak += 1;
+    } else if (wasCompleted && !isNowCompleted) {
+      newStreak = (newStreak > 0) ? newStreak - 1 : 0;
+    }
+    final newBest =
+        newStreak > target.bestStreak ? newStreak : target.bestStreak;
+
+    _habits[index] = target.copyWith(
+      todayCount: safeCount,
+      isCompletedToday: isNowCompleted,
+      currentStreak: newStreak,
+      bestStreak: newBest,
+    );
+    notifyListeners();
+
+    try {
+      await _habitDao.setHabitCount(
+        habitId: habitId,
+        date: dateStr,
+        count: safeCount,
+        targetCount: targetCount,
+      );
+      HomeWidgetService.updateWidgetData(_habits);
+    } catch (e) {
+      debugPrint('DB Error during setHabitCount: $e');
       _habits[index] = target;
       notifyListeners();
     }
@@ -87,6 +229,8 @@ class HabitProvider extends ChangeNotifier {
   /// 습관 추가
   Future<int> addHabit(Habit habit) async {
     final insertedId = await _habitDao.insertHabit(habit);
+    final createdHabit = habit.copyWith(id: insertedId);
+    await NotificationService.scheduleHabitReminder(createdHabit);
     await loadHabits();
     return insertedId;
   }
@@ -94,11 +238,13 @@ class HabitProvider extends ChangeNotifier {
   /// 습관 수정
   Future<void> updateHabit(Habit habit) async {
     await _habitDao.updateHabit(habit);
+    await NotificationService.scheduleHabitReminder(habit);
     await loadHabits();
   }
 
   /// 습관 삭제
   Future<void> deleteHabit(int habitId) async {
+    await NotificationService.cancelHabitReminder(habitId);
     await _habitDao.deleteHabit(habitId);
     await loadHabits();
   }

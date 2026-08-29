@@ -7,7 +7,7 @@ class AppConstants {
 
   // 데이터베이스 설정
   static const String dbName = 'three_sec_habit.db';
-  static const int dbVersion = 1;
+  static const int dbVersion = 2;
 
   // 테이블명
   static const String tableHabits = 'habits';
