@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/theme_provider.dart';
+import '../common/help_guide_dialog.dart';
 
 /// 앱 설정 화면 (다크모드 전환, 알림 설정, 백업/복원 안내)
 class SettingsScreen extends StatefulWidget {
@@ -15,91 +16,169 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _allNotificationsEnabled = true;
 
+  Widget _buildSectionHeader(String title, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: context.textMuted,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
-
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(66),
         child: Container(
           decoration: BoxDecoration(
-            color: context.surface,
+            gradient: LinearGradient(
+              colors: context.isDarkMode
+                  ? const [
+                      Color(0xFF064E3B),
+                      Color(0xFF065F46),
+                      Color(0xFF0F3460),
+                    ]
+                  : const [
+                      Color(0xFF059669),
+                      Color(0xFF10B981),
+                      Color(0xFF0EA5E9),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: Border(
               bottom: BorderSide(
-                color: context.surfaceBorder,
-                width: 1.0,
+                color: context.isDarkMode
+                    ? AppColors.primary.withValues(alpha: 0.3)
+                    : const Color(0xFFDDD6FE),
+                width: 1.2,
               ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                    alpha: context.isDarkMode ? 0.3 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: context.isDarkMode
+                    ? AppColors.primary.withValues(alpha: 0.15)
+                    : AppColors.primary.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF475569), Color(0xFF64748B)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.settings_rounded, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '설정',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            letterSpacing: -0.3,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.settings_rounded,
+                        color: Colors.white.withValues(alpha: 0.95),
+                        size: 20,
+                        shadows: [
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            blurRadius: 8,
                           ),
+                        ],
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '설정',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          letterSpacing: -0.5,
+                          height: 1.0,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '앱 환경 및 알림 관리',
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   // 다크/라이트 모드 토글
                   GestureDetector(
-                    onTap: () => themeProvider.toggleTheme(!context.isDarkMode),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => context.read<ThemeProvider>().toggleTheme(!context.isDarkMode),
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
+                            ? const Color(0xFF1E293B)
+                            : Colors.white,
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                              : const Color(0xFFA7F3D0),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF059669).withValues(
+                              alpha: context.isDarkMode ? 0.25 : 0.12,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         context.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                        size: 17,
-                        color: context.textSecondary,
+                        size: 18,
+                        color: context.isDarkMode
+                            ? const Color(0xFFFDE047)
+                            : const Color(0xFF059669),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 도움말 아이콘
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => HelpGuideDialog.show(context),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.isDarkMode
+                            ? const Color(0xFF1E293B)
+                            : Colors.white,
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                              : const Color(0xFFA7F3D0),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF059669).withValues(
+                              alpha: context.isDarkMode ? 0.25 : 0.12,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.help_outline_rounded,
+                        size: 18,
+                        color: context.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : const Color(0xFF059669),
                       ),
                     ),
                   ),
@@ -112,36 +191,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         children: [
-          // 1. 테마 설정 섹션
-          _buildSectionHeader('화면 테마', context),
-          Card(
-            margin: EdgeInsets.zero,
-            color: context.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
-              side: BorderSide(color: context.surfaceBorder),
-            ),
-            child: SwitchListTile(
-              secondary: const Icon(Icons.dark_mode_rounded, color: AppColors.primaryLight),
-              title: Text(
-                '다크 모드',
-                style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600),
-              ),
-              subtitle: Text(
-                '어둡고 눈이 편안한 테마를 사용합니다',
-                style: TextStyle(color: context.textMuted, fontSize: 12),
-              ),
-              value: themeProvider.isDarkMode,
-              activeTrackColor: AppColors.primary,
-              activeThumbColor: Colors.white,
-              onChanged: (val) {
-                themeProvider.toggleTheme(val);
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 2. 알림 설정 섹션
+          // 1. 알림 설정 섹션
           _buildSectionHeader('알림', context),
           Card(
             margin: EdgeInsets.zero,
@@ -292,7 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('버전', style: TextStyle(color: context.textSecondary)),
-                      Text('1.0.0 (3초 컷)', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700)),
+                      Text('v1.0.0 (Build 4)', style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -308,20 +358,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: context.textMuted,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

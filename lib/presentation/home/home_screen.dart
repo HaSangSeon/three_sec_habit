@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_util.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../common/help_guide_dialog.dart';
 import '../habit_edit/habit_edit_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
@@ -117,115 +118,204 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 탭 1: 오늘의 습관 체크리스트
   Widget _buildTodayChecklistTab() {
     final habitProvider = context.watch<HabitProvider>();
-    final todayStr = DateUtil.formatForDisplay(DateTime.now());
-
-    final now = DateTime.now();
-    final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-    final weekday = weekdays[now.weekday - 1];
+    final selectedDate = habitProvider.selectedDate;
+    final todayStr = DateUtil.formatForDisplay(selectedDate);
 
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(68),
         child: Container(
           decoration: BoxDecoration(
-            color: context.surface,
+            gradient: LinearGradient(
+              colors: context.isDarkMode
+                  ? const [
+                      Color(0xFF2E0D5E),
+                      Color(0xFF4C1D95),
+                      Color(0xFF3730A3),
+                    ]
+                  : const [
+                      Color(0xFF7C3AED),
+                      Color(0xFF6D28D9),
+                      Color(0xFF5B21B6),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
             border: Border(
               bottom: BorderSide(
-                color: context.surfaceBorder,
-                width: 1.0,
+                color: context.isDarkMode
+                    ? AppColors.primaryLight.withValues(alpha: 0.4)
+                    : const Color(0xFFC4B5FD),
+                width: 1.4,
               ),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(
-                    alpha: context.isDarkMode ? 0.3 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: context.isDarkMode
+                    ? const Color(0xFF581C87).withValues(alpha: 0.35)
+                    : const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 앱 로고 + 이름
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primaryDark, AppColors.primary],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          '3초 습관',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            letterSpacing: -0.3,
+                  // 앱 타이틀 — 깔끔한 타이포그래피 스타일
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.bolt_rounded,
+                        color: Colors.white.withValues(alpha: 0.95),
+                        size: 20,
+                        shadows: [
+                          Shadow(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            blurRadius: 8,
                           ),
+                        ],
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '3초 습관',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                          letterSpacing: -0.5,
+                          height: 1.0,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // 날짜 텍스트
-                  Text(
-                    '${now.month}월 ${now.day}일 ($weekday)',
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   // 다크/라이트 모드 토글
                   GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: () => context.read<ThemeProvider>().toggleTheme(!context.isDarkMode),
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
+                            ? const Color(0xFF2E1065)
+                            : Colors.white,
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? AppColors.primary.withValues(alpha: 0.35)
+                              : const Color(0xFFDDD6FE),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(
+                              alpha: context.isDarkMode ? 0.2 : 0.1,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         context.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                        size: 17,
-                        color: context.textSecondary,
+                        size: 18,
+                        color: context.isDarkMode
+                            ? const Color(0xFFFDE047)
+                            : AppColors.primary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // 캘린더 아이콘
+                  // 캘린더 아이콘 (날짜 선택 팝업 연결)
                   GestureDetector(
-                    onTap: () => habitProvider.setSelectedDate(DateTime.now()),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: habitProvider.selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        habitProvider.setSelectedDate(picked);
+                      }
+                    },
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
+                            ? const Color(0xFF2E1065)
+                            : Colors.white,
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? AppColors.primary.withValues(alpha: 0.35)
+                              : const Color(0xFFDDD6FE),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(
+                              alpha: context.isDarkMode ? 0.2 : 0.1,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         Icons.calendar_today_rounded,
                         size: 17,
-                        color: context.textSecondary,
+                        color: context.isDarkMode
+                            ? AppColors.accent
+                            : AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 도움말 아이콘
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => HelpGuideDialog.show(context),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.isDarkMode
+                            ? const Color(0xFF2E1065)
+                            : Colors.white,
+                        border: Border.all(
+                          color: context.isDarkMode
+                              ? AppColors.primary.withValues(alpha: 0.35)
+                              : const Color(0xFFDDD6FE),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(
+                              alpha: context.isDarkMode ? 0.2 : 0.1,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.help_outline_rounded,
+                        size: 18,
+                        color: context.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : AppColors.primary,
                       ),
                     ),
                   ),

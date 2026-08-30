@@ -5,7 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'core/services/ad_service.dart';
 import 'core/services/home_widget_service.dart';
 import 'core/services/notification_service.dart';
-import 'presentation/home/home_screen.dart';
+import 'presentation/splash/splash_screen.dart';
 import 'providers/habit_provider.dart';
 import 'providers/theme_provider.dart';
 
@@ -36,7 +36,7 @@ class ThreeSecHabitApp extends StatelessWidget {
             themeMode: themeProvider.themeMode,
             theme: ThemeProvider.lightTheme,
             darkTheme: ThemeProvider.darkTheme,
-            home: const HomeScreen(),
+            home: const SplashScreen(),
           );
         },
       ),
