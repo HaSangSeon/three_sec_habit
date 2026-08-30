@@ -4,7 +4,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/ad_service.dart';
 
-/// 하단 AdMob 배너 광고 위젯 (실제 AdMob 배너 로드 및 폴백 UI)
+/// 하단 AdMob 가로 100% 맞춤형 적응형 배너 광고 위젯
 class AdBannerSlot extends StatefulWidget {
   const AdBannerSlot({super.key});
 
@@ -15,22 +15,31 @@ class AdBannerSlot extends StatefulWidget {
 class _AdBannerSlotState extends State<AdBannerSlot> {
   BannerAd? _bannerAd;
   bool _isAdLoaded = false;
+  bool _isAdLoading = false;
+  int? _loadedWidth;
 
   @override
-  void initState() {
-    super.initState();
-    _loadAd();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentWidth = MediaQuery.of(context).size.width.truncate();
+    if (_loadedWidth != currentWidth && !_isAdLoading) {
+      _loadAdaptiveAd(currentWidth);
+    }
   }
 
-  void _loadAd() {
-    // 테스트/웹 또는 미지원 플랫폼 예외 처리
+  Future<void> _loadAdaptiveAd(int width) async {
     if (kIsWeb) return;
+    _isAdLoading = true;
+    _loadedWidth = width;
+
     try {
-      _bannerAd = AdService.createBannerAd(
+      final ad = await AdService.createAdaptiveBannerAd(
+        width: width,
         onAdLoaded: () {
           if (mounted) {
             setState(() {
               _isAdLoaded = true;
+              _isAdLoading = false;
             });
           }
         },
@@ -38,13 +47,22 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
           if (mounted) {
             setState(() {
               _isAdLoaded = false;
+              _isAdLoading = false;
             });
           }
         },
       );
-      _bannerAd?.load();
+
+      if (ad != null) {
+        _bannerAd?.dispose();
+        _bannerAd = ad;
+        await _bannerAd?.load();
+      } else {
+        _isAdLoading = false;
+      }
     } catch (e) {
-      debugPrint('Error loading banner ad: $e');
+      debugPrint('Error loading adaptive banner ad: $e');
+      _isAdLoading = false;
     }
   }
 
@@ -63,7 +81,7 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
         alignment: Alignment.center,
         color: context.bg,
         child: SizedBox(
-          width: _bannerAd!.size.width.toDouble(),
+          width: double.infinity,
           height: _bannerAd!.size.height.toDouble(),
           child: AdWidget(ad: _bannerAd!),
         ),
@@ -101,15 +119,15 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
                 child: const Text(
                   'AD',
                   style: TextStyle(
-                    color: AppColors.primary,
+                    color: AppColors.primaryLight,
                     fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               Text(
-                'AdMob 배너 광고 영역',
+                '3초 습관과 함께하는 생산적인 하루 ⚡️',
                 style: TextStyle(
                   color: context.textMuted,
                   fontSize: 12,

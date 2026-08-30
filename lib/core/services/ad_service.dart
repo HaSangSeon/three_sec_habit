@@ -25,7 +25,7 @@ class AdService {
   static String get bannerAdUnitId =>
       kReleaseMode ? AppConstants.realBannerAdId : AppConstants.testBannerAdId;
 
-  /// 하단 배너 광고 생성
+  /// 하단 배너 광고 생성 (기본 320x50)
   static BannerAd? createBannerAd({
     required Function() onAdLoaded,
     required Function(LoadAdError) onAdFailedToLoad,
@@ -39,6 +39,31 @@ class AdService {
         onAdLoaded: (ad) => onAdLoaded(),
         onAdFailedToLoad: (ad, error) {
           debugPrint('BannerAd failed to load: $error');
+          ad.dispose();
+          onAdFailedToLoad(error);
+        },
+      ),
+    );
+  }
+
+  /// 가로 100% 화면 맞춤형 적응형(Adaptive) 배너 광고 생성
+  static Future<BannerAd?> createAdaptiveBannerAd({
+    required int width,
+    required Function() onAdLoaded,
+    required Function(LoadAdError) onAdFailedToLoad,
+  }) async {
+    if (!_isInitialized) return null;
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
+    if (size == null) return null;
+
+    return BannerAd(
+      adUnitId: bannerAdUnitId,
+      size: size,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) => onAdLoaded(),
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('Adaptive BannerAd failed to load: $error');
           ad.dispose();
           onAdFailedToLoad(error);
         },

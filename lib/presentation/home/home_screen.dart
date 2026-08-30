@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_util.dart';
 import '../../providers/habit_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../habit_edit/habit_edit_screen.dart';
 import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
@@ -118,38 +119,121 @@ class _HomeScreenState extends State<HomeScreen> {
     final habitProvider = context.watch<HabitProvider>();
     final todayStr = DateUtil.formatForDisplay(DateTime.now());
 
+    final now = DateTime.now();
+    final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    final weekday = weekdays[now.weekday - 1];
+
     return Scaffold(
       backgroundColor: context.bg,
-      appBar: AppBar(
-        backgroundColor: context.bg,
-        title: Row(
-          children: [
-            const Icon(
-              Icons.bolt_rounded,
-              color: AppColors.primary,
-              size: 26,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '3초 습관',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.surface,
+            border: Border(
+              bottom: BorderSide(
+                color: context.surfaceBorder,
+                width: 1.0,
               ),
             ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.calendar_today_rounded, size: 20, color: context.textPrimary),
-            tooltip: '오늘로 이동',
-            onPressed: () {
-              habitProvider.setSelectedDate(DateTime.now());
-            },
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(
+                    alpha: context.isDarkMode ? 0.3 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-        ],
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 앱 로고 + 이름
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primaryDark, AppColors.primary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
+                        SizedBox(width: 4),
+                        Text(
+                          '3초 습관',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // 날짜 텍스트
+                  Text(
+                    '${now.month}월 ${now.day}일 ($weekday)',
+                    style: TextStyle(
+                      color: context.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  // 다크/라이트 모드 토글
+                  GestureDetector(
+                    onTap: () => context.read<ThemeProvider>().toggleTheme(!context.isDarkMode),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.04),
+                      ),
+                      child: Icon(
+                        context.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        size: 17,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 캘린더 아이콘
+                  GestureDetector(
+                    onTap: () => habitProvider.setSelectedDate(DateTime.now()),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : Colors.black.withValues(alpha: 0.04),
+                      ),
+                      child: Icon(
+                        Icons.calendar_today_rounded,
+                        size: 17,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: SafeArea(
         child: Column(

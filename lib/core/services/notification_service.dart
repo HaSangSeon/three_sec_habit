@@ -144,6 +144,40 @@ class NotificationService {
     }
   }
 
+  /// 테스트 즉시 알림 발송
+  static Future<void> showTestNotification({
+    String title = '⚡ [3초 습관] 테스트 알림',
+    String body = '알림이 정상적으로 작동하고 있습니다! 체크 한 번, 3초 컷 ⚡️',
+  }) async {
+    try {
+      const notificationDetails = NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDesc,
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+        ),
+        iOS: DarwinNotificationDetails(
+          sound: 'default',
+        ),
+      );
+
+      await _notificationsPlugin.show(
+        id: 999999,
+        title: title,
+        body: body,
+        notificationDetails: notificationDetails,
+        payload: 'test_notification',
+      );
+    } catch (e) {
+      debugPrint('Error showing test notification: $e');
+    }
+  }
+
   /// 고유 Notification ID 생성 (습관 ID * 100 + subId)
   static int _generateNotificationId(int habitId, int subId) {
     return (habitId * 100 + subId).abs() % 2147483647;
