@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import 'achievement_badge_sheet.dart';
 
 /// 상단 스트릭 및 총 달성 현황 대형 배너
 class OverallStreakBanner extends StatelessWidget {
@@ -43,20 +44,60 @@ class OverallStreakBanner extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.local_fire_department_rounded,
-                color: AppColors.fireOrange,
-                size: 24,
+              const Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department_rounded,
+                    color: AppColors.fireOrange,
+                    size: 24,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '나의 습관 연속 기록',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8),
-              Text(
-                '나의 습관 연속 기록',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+              // 뱃지 보기 버튼
+              GestureDetector(
+                onTap: () => AchievementBadgeSheet.show(
+                  context,
+                  maxCurrentStreak: maxCurrentStreak,
+                  bestEverStreak: bestEverStreak,
+                  totalCompletions: totalCompletions,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.28),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('🏅', style: TextStyle(fontSize: 12)),
+                      SizedBox(width: 4),
+                      Text(
+                        '뱃지 보기',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -97,6 +138,39 @@ class OverallStreakBanner extends StatelessWidget {
                 icon: Icons.check_circle_rounded,
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          // 하단 친절한 요약 설명 캡션
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.tips_and_updates_rounded,
+                  size: 13,
+                  color: Colors.white.withValues(alpha: 0.75),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    totalCompletions == 0
+                        ? '오늘의 습관을 완료하고 첫 연속 기록을 시작해보세요!'
+                        : '현재 최장 $maxCurrentStreak일째 달리는 중! 총 $totalCompletions회의 실천이 모였어요 ✨',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

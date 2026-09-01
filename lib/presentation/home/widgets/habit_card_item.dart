@@ -99,10 +99,20 @@ class _HabitCardItemState extends State<HabitCardItem>
     _bounceController.forward(from: 0.0);
 
     if (widget.habitStatus.habit.habitType == HabitType.count) {
-      if (widget.onIncrement != null) {
-        widget.onIncrement!();
+      if (widget.habitStatus.isCompletedToday) {
+        // 이미 목표 달성(녹색 체크) 상태에서 누르면 완료 해제 (1회 감소)
+        if (widget.onDecrement != null) {
+          widget.onDecrement!();
+        } else {
+          widget.onToggle();
+        }
       } else {
-        widget.onToggle();
+        // 목표 미달성 상태에서는 +1 증가
+        if (widget.onIncrement != null) {
+          widget.onIncrement!();
+        } else {
+          widget.onToggle();
+        }
       }
     } else {
       widget.onToggle();
@@ -222,10 +232,6 @@ class _HabitCardItemState extends State<HabitCardItem>
                                           fontSize: 16,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: -0.3,
-                                          decoration: (isDone && !isCountType)
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                          decorationColor: context.textMuted,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -254,6 +260,26 @@ class _HabitCardItemState extends State<HabitCardItem>
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
+                                    // 카운트형 습관 목표 뱃지 (상단 태그에서도 즉시 확인 가능)
+                                    if (isCountType)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: isDone
+                                              ? AppColors.success.withValues(alpha: 0.14)
+                                              : habitColor.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '목표 $todayCount/$targetCount${habit.unit}',
+                                          style: TextStyle(
+                                            color: isDone ? AppColors.success : habitColor,
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
                                     // 간격 알림 뱃지
                                     if (habit.reminderEnabled &&
                                         habit.reminderType == ReminderType.interval)

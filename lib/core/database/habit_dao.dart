@@ -266,4 +266,80 @@ class HabitDao {
     }
     return result;
   }
+
+  /// 특정 날짜에 완료된 습관 목록 조회 (로그 정보 포함)
+  Future<List<Map<String, dynamic>>> getCompletedHabitsForDate(String dateStr) async {
+    final db = await _db;
+    final sql = '''
+      SELECT 
+        h.id, h.title, h.icon_name, h.color_value, h.habit_type, h.target_count, h.unit,
+        h.repeat_type, h.repeat_days, h.repeat_count,
+        l.count as log_count, l.is_completed as log_completed, l.completed_at
+      FROM ${AppConstants.tableHabits} h
+      INNER JOIN ${AppConstants.tableHabitLogs} l
+        ON h.id = l.habit_id
+      WHERE l.date = ? AND l.is_completed = 1 AND h.is_archived = 0
+      ORDER BY h.id ASC
+    ''';
+    return await db.rawQuery(sql, [dateStr]);
+  }
+
+  /// 요일별 완료 집계 통계 (1: 월요일 ~ 7: 일요일)
+  Future<Map<int, int>> getDayOfWeekStats() async {
+    final db = await _db;
+    final List<Map<String, dynamic>> maps = await db.query(
+      AppConstants.tableHabitLogs,
+      columns: ['date'],
+      where: 'is_completed = 1',
+    );
+    final stats = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
+    for (final map in maps) {
+      final dateStr = map['date'] as String?;
+      if (dateStr != null) {
+        final d = DateTime.tryParse(dateStr);
+        if (d != null) {
+          stats[d.weekday] = (stats[d.weekday] ?? 0) + 1;
+        }
+      }
+    }
+    return stats;
+  }
+
+  /// 월간 요약 데이터 조회 (해당 월 총 실천 수, 최다 실천 습관 등)
+  Future<Map<String, dynamic>> getMonthlyOverviewStats(int year, int month) async {
+    final db = await _db;
+    final startDate = '$year-${month.toString().padLeft(2, '0')}-01';
+    final nextMonth = month == 12 ? 1 : month + 1;
+    final nextYear = month == 12 ? year + 1 : year;
+    final endDate = '$nextYear-${nextMonth.toString().padLeft(2, '0')}-01';
+
+    // 해당 월 총 완료 횟수
+    final countResult = await db.rawQuery('''
+      SELECT COUNT(*) as total
+      FROM ${AppConstants.tableHabitLogs}
+      WHERE is_completed = 1 AND date >= ? AND date < ?
+    ''', [startDate, endDate]);
+    final totalCount = (countResult.first['total'] as int?) ?? 0;
+
+    // 해당 월 최다 실천 습관
+    final topHabitResult = await db.rawQuery('''
+      SELECT h.title, h.icon_name, h.color_value, COUNT(l.id) as completion_count
+      FROM ${AppConstants.tableHabits} h
+      INNER JOIN ${AppConstants.tableHabitLogs} l ON h.id = l.habit_id
+      WHERE l.is_completed = 1 AND l.date >= ? AND l.date < ?
+      GROUP BY h.id
+      ORDER BY completion_count DESC
+      LIMIT 1
+    ''', [startDate, endDate]);
+
+    Map<String, dynamic>? topHabit;
+    if (topHabitResult.isNotEmpty) {
+      topHabit = topHabitResult.first;
+    }
+
+    return {
+      'totalCompletions': totalCount,
+      'topHabit': topHabit,
+    };
+  }
 }

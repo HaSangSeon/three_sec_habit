@@ -3,13 +3,18 @@ import '../core/constants/app_colors.dart';
 
 /// 앱의 다크모드/라이트모드 테마 관리 프로바이더
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.dark; // 기본값: 다크모드
+  ThemeMode _themeMode = ThemeMode.light; // 기본값: 라이트모드
 
   ThemeMode get themeMode => _themeMode;
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
   void toggleTheme(bool isDark) {
     _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    _themeMode = mode;
     notifyListeners();
   }
 

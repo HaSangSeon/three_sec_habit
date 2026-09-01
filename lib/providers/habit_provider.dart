@@ -59,9 +59,9 @@ class HabitProvider extends ChangeNotifier {
     final dateStr = DateUtil.formatDate(_selectedDate);
 
     if (target.habit.habitType == HabitType.count) {
-      // 카운트형 습관: 이미 목표 달성 상태면 0으로 리셋, 아니면 +1 증가
+      // 카운트형 습관: 이미 목표 달성 상태면 1회 감소(완료 해제), 아니면 +1 증가
       if (target.isCompletedToday) {
-        await setHabitCount(habitId, 0);
+        await decrementHabitCount(habitId, step: 1);
       } else {
         await incrementHabitCount(habitId, step: 1);
       }

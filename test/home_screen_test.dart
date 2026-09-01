@@ -27,7 +27,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('8월 29일 (토)'), findsOneWidget);
-      expect(find.text('3초 컷'), findsOneWidget);
+      expect(find.text('3초 컷 습관'), findsOneWidget);
       expect(find.textContaining('3'), findsWidgets);
       expect(find.text('60%'), findsOneWidget);
       expect(find.text('3개 완료됨 (2개 남음)'), findsOneWidget);
@@ -65,7 +65,7 @@ void main() {
       expect(find.text('영양제 먹기'), findsOneWidget);
       expect(find.text('5일 연속'), findsOneWidget);
 
-      await tester.tap(find.text('영양제 먹기'));
+      await tester.tap(find.byIcon(Icons.check_rounded));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -115,16 +115,16 @@ void main() {
       await tester.pump();
 
       expect(find.text('물 8잔 마시기'), findsOneWidget);
-      expect(find.text('1시간마다'), findsOneWidget);
+      expect(find.text('1시간마다 알림'), findsOneWidget);
       expect(find.text('3 / 8 잔'), findsOneWidget);
 
-      // 탭하여 1잔 증가
-      await tester.tap(find.text('물 8잔 마시기'));
+      // +1 원형 버튼 탭하여 1잔 증가
+      await tester.tap(find.text('+1'));
       await tester.pump();
       expect(incremented, isTrue);
 
       // - 버튼 탭하여 1잔 감소
-      await tester.tap(find.byIcon(Icons.remove));
+      await tester.tap(find.byIcon(Icons.remove_rounded));
       await tester.pump();
       expect(decremented, isTrue);
     });

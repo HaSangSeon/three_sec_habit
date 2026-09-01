@@ -10,6 +10,7 @@ import '../settings/settings_screen.dart';
 import '../stats/stats_screen.dart';
 import 'widgets/ad_banner_slot.dart';
 import 'widgets/empty_habit_view.dart';
+import 'widgets/habit_calendar_picker_dialog.dart';
 import 'widgets/habit_card_item.dart';
 import 'widgets/today_header.dart';
 
@@ -34,23 +35,38 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onAddHabitPressed() async {
-    final result = await Navigator.of(context).push<bool>(
+    final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => const HabitEditScreen(),
+        builder: (_) => HabitEditScreen(initialTabIndex: _currentTabIndex),
       ),
     );
-    if (result == true && mounted) {
+    if (!mounted) return;
+    if (result == true) {
+      context.read<HabitProvider>().loadHabits();
+    } else if (result is int) {
+      setState(() {
+        _currentTabIndex = result;
+      });
       context.read<HabitProvider>().loadHabits();
     }
   }
 
   void _onEditHabit(dynamic habit) async {
-    final result = await Navigator.of(context).push<bool>(
+    final result = await Navigator.of(context).push<dynamic>(
       MaterialPageRoute(
-        builder: (_) => HabitEditScreen(habit: habit),
+        builder: (_) => HabitEditScreen(
+          habit: habit,
+          initialTabIndex: _currentTabIndex,
+        ),
       ),
     );
-    if (result == true && mounted) {
+    if (!mounted) return;
+    if (result == true) {
+      context.read<HabitProvider>().loadHabits();
+    } else if (result is int) {
+      setState(() {
+        _currentTabIndex = result;
+      });
       context.read<HabitProvider>().loadHabits();
     }
   }
@@ -59,12 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bg,
-      body: switch (_currentTabIndex) {
-        0 => _buildTodayChecklistTab(),
-        1 => const StatsScreen(),
-        2 => const SettingsScreen(),
-        _ => _buildTodayChecklistTab(),
-      },
+      body: IndexedStack(
+        index: _currentTabIndex,
+        children: [
+          _buildTodayChecklistTab(),
+          const StatsScreen(),
+          const SettingsScreen(),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: context.bg,
@@ -238,11 +256,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
+                      final picked = await HabitCalendarPickerDialog.show(
+                        context,
                         initialDate: habitProvider.selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (picked != null) {
                         habitProvider.setSelectedDate(picked);
@@ -352,7 +368,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           backgroundColor: context.surface,
                           onRefresh: () => habitProvider.loadHabits(),
                           child: ListView(
-                            padding: const EdgeInsets.only(bottom: 24),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.only(bottom: 100),
                             children: [
                               // 1) 오늘 실천할 습관 목록
                               if (habitProvider.todayHabits.isNotEmpty) ...[

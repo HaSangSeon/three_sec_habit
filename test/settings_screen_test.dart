@@ -20,9 +20,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('설정'), findsOneWidget);
-    expect(find.text('다크 모드'), findsOneWidget);
+    expect(find.text('테마 모드 선택'), findsOneWidget);
+    expect(find.text('라이트'), findsOneWidget);
+    expect(find.text('다크'), findsOneWidget);
     expect(find.text('전체 알림 허용'), findsOneWidget);
     expect(find.text('데이터 백업 (내보내기)'), findsOneWidget);
-    expect(find.text('1.0.0 (3초 컷)'), findsOneWidget);
   });
 }

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/database/habit_dao.dart';
+import '../../core/utils/date_util.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../common/help_guide_dialog.dart';
+import 'widgets/day_of_week_chart.dart';
 import 'widgets/grass_heatmap_calendar.dart';
 import 'widgets/habit_stat_card.dart';
+import 'widgets/monthly_summary_card.dart';
 import 'widgets/overall_streak_banner.dart';
 
 /// 통계 및 월간 깃허브 잔디밭 히트맵 화면
@@ -19,33 +22,92 @@ class StatsScreen extends StatefulWidget {
   State<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _StatsScreenState extends State<StatsScreen>
+    with AutomaticKeepAliveClientMixin {
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
   Map<String, int> _heatmapData = {};
-  bool _isLoadingHeatmap = false;
+
+  // 선택된 날짜 및 해당 날짜의 실천 완료 습관 목록
+  String _selectedDate = DateUtil.today();
+  List<Map<String, dynamic>> _completedHabitsForDate = [];
+  bool _isLoadingDateDetails = false;
+
+  // 요일별 실천 통계 (1:월 ~ 7:일)
+  Map<int, int> _weekdayStats = {};
+
+  // 월간 요약 리포트 데이터
+  Map<String, dynamic> _monthlyOverview = {};
 
   HabitDao get _dao => widget.habitDao ?? HabitDao();
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
-    _loadHeatmap();
+    _loadAllStats();
+    _loadDateDetails(_selectedDate);
+  }
+
+  Future<void> _loadAllStats() async {
+    await Future.wait([
+      _loadHeatmap(),
+      _loadWeekdayStats(),
+      _loadMonthlyOverview(),
+    ]);
   }
 
   Future<void> _loadHeatmap() async {
-    setState(() => _isLoadingHeatmap = true);
     try {
       final data = await _dao.getMonthlyHeatmapLogs(_selectedYear, _selectedMonth);
       if (mounted) {
         setState(() {
           _heatmapData = data;
-          _isLoadingHeatmap = false;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadWeekdayStats() async {
+    try {
+      final stats = await _dao.getDayOfWeekStats();
+      if (mounted) {
+        setState(() {
+          _weekdayStats = stats;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadMonthlyOverview() async {
+    try {
+      final overview = await _dao.getMonthlyOverviewStats(_selectedYear, _selectedMonth);
+      if (mounted) {
+        setState(() {
+          _monthlyOverview = overview;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadDateDetails(String dateStr) async {
+    setState(() {
+      _selectedDate = dateStr;
+      _isLoadingDateDetails = true;
+    });
+    try {
+      final list = await _dao.getCompletedHabitsForDate(dateStr);
+      if (mounted) {
+        setState(() {
+          _completedHabitsForDate = list;
+          _isLoadingDateDetails = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingHeatmap = false);
+        setState(() => _isLoadingDateDetails = false);
       }
     }
   }
@@ -60,6 +122,7 @@ class _StatsScreenState extends State<StatsScreen> {
       }
     });
     _loadHeatmap();
+    _loadMonthlyOverview();
   }
 
   void _nextMonth() {
@@ -72,10 +135,12 @@ class _StatsScreenState extends State<StatsScreen> {
       }
     });
     _loadHeatmap();
+    _loadMonthlyOverview();
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final habitProvider = context.watch<HabitProvider>();
     final habits = habitProvider.habits;
 
@@ -250,49 +315,102 @@ class _StatsScreenState extends State<StatsScreen> {
           backgroundColor: context.surface,
           onRefresh: () async {
             await habitProvider.loadHabits();
-            await _loadHeatmap();
+            await _loadAllStats();
+            await _loadDateDetails(_selectedDate);
           },
           child: ListView(
-            padding: const EdgeInsets.only(bottom: 30),
+            padding: const EdgeInsets.only(bottom: 40),
             children: [
-              // 1. 상단 종합 스트릭 및 완료 배너
+              // 1. 상단 종합 스트릭 및 완료 배너 (뱃지 보기 버튼 & 설명 팁 포함)
               OverallStreakBanner(
                 maxCurrentStreak: maxCurrentStreak,
                 bestEverStreak: bestEverStreak,
                 totalCompletions: totalCompletions,
               ),
 
-              // 2. 깃허브 잔디밭 스타일 월간 히트맵
-              if (_isLoadingHeatmap)
-                const SizedBox(
-                  height: 220,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                    ),
-                  ),
-                )
-              else
-                GrassHeatmapCalendar(
-                  year: _selectedYear,
-                  month: _selectedMonth,
-                  heatmapData: _heatmapData,
-                  onPreviousMonth: _previousMonth,
-                  onNextMonth: _nextMonth,
-                ),
+              // 2. 이번 달 실천 요약 리포트 (총 실천수 & 이달의 성실왕)
+              MonthlySummaryCard(
+                year: _selectedYear,
+                month: _selectedMonth,
+                totalMonthCompletions: (_monthlyOverview['totalCompletions'] as int?) ?? 0,
+                topHabit: _monthlyOverview['topHabit'] as Map<String, dynamic>?,
+              ),
 
-              const SizedBox(height: 16),
+              // 3. 깃허브 잔디밭 스타일 월간 히트맵 (달력 영역 내부 하단에 선택 날짜 완료 텍스트 요약 포함)
+              GrassHeatmapCalendar(
+                year: _selectedYear,
+                month: _selectedMonth,
+                heatmapData: _heatmapData,
+                selectedDate: _selectedDate,
+                completedHabits: _completedHabitsForDate,
+                isLoadingHabits: _isLoadingDateDetails,
+                onDateSelected: _loadDateDetails,
+                onPreviousMonth: _previousMonth,
+                onNextMonth: _nextMonth,
+              ),
 
-              // 3. 습관별 상세 통계 목록
+              // 4. 요일별 실천 패턴 미니 막대 차트
+              DayOfWeekChart(weekdayStats: _weekdayStats),
+
+              const SizedBox(height: 12),
+
+              // 5. 습관별 상세 통계 목록 헤더
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Text(
-                  '습관별 달성률',
-                  style: TextStyle(
-                    color: context.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.primary.withValues(alpha: 0.25),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.insights_rounded,
+                            color: AppColors.primary,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '습관별 달성률',
+                          style: TextStyle(
+                            color: context.textPrimary,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (habits.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                        decoration: BoxDecoration(
+                          color: context.surface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: context.surfaceBorder,
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          '총 ${habits.length}개',
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 
