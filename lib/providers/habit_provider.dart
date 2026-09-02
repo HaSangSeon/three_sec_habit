@@ -42,6 +42,8 @@ class HabitProvider extends ChangeNotifier {
       _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
       // 홈 위젯 동기화
       HomeWidgetService.updateWidgetData(_habits);
+      // 스마트 알림 일괄 최신화
+      NotificationService.rescheduleAllHabits(_habits);
     } catch (e) {
       debugPrint('Error loading habits: $e');
     } finally {
@@ -94,11 +96,10 @@ class HabitProvider extends ChangeNotifier {
         isCompleted: nextState,
         targetCount: 1,
       );
-      if (nextState) {
-        await NotificationService.cancelHabitReminder(habitId);
-      } else {
-        await NotificationService.scheduleHabitReminder(target.habit);
-      }
+      await NotificationService.scheduleHabitReminder(
+        target.habit,
+        isCompletedToday: nextState,
+      );
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during toggle: $e');
@@ -142,6 +143,10 @@ class HabitProvider extends ChangeNotifier {
         count: newCount,
         targetCount: targetCount,
       );
+      await NotificationService.scheduleHabitReminder(
+        target.habit,
+        isCompletedToday: isNowCompleted,
+      );
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during increment: $e');
@@ -182,6 +187,10 @@ class HabitProvider extends ChangeNotifier {
         date: dateStr,
         count: newCount,
         targetCount: targetCount,
+      );
+      await NotificationService.scheduleHabitReminder(
+        target.habit,
+        isCompletedToday: isNowCompleted,
       );
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
@@ -227,11 +236,10 @@ class HabitProvider extends ChangeNotifier {
         count: safeCount,
         targetCount: targetCount,
       );
-      if (isNowCompleted) {
-        await NotificationService.cancelHabitReminder(habitId);
-      } else {
-        await NotificationService.scheduleHabitReminder(target.habit);
-      }
+      await NotificationService.scheduleHabitReminder(
+        target.habit,
+        isCompletedToday: isNowCompleted,
+      );
       HomeWidgetService.updateWidgetData(_habits);
     } catch (e) {
       debugPrint('DB Error during setHabitCount: $e');

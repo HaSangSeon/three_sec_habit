@@ -39,19 +39,19 @@ class HabitWidgetProvider2x2 : HomeWidgetProvider() {
                 setTextViewText(R.id.widget_2x2_date, dateStr)
                 setTextViewText(R.id.widget_2x2_quick_title, topHabitTitle)
 
+                val topHabitBtnText = widgetData.getString("widget_top_habit_btn_text", if (topHabitDone) "✓" else "○") ?: "○"
+                setTextViewText(R.id.widget_2x2_check_icon, topHabitBtnText)
                 if (topHabitDone) {
-                    setTextViewText(R.id.widget_2x2_check_icon, "✓")
                     setTextColor(R.id.widget_2x2_check_icon, android.graphics.Color.parseColor("#10B981"))
                 } else {
-                    setTextViewText(R.id.widget_2x2_check_icon, "○")
                     setTextColor(R.id.widget_2x2_check_icon, android.graphics.Color.parseColor("#8B5CF6"))
                 }
 
-                // 빠른 체크 버튼 클릭 시 백그라운드 콜백 URI 전송
+                // 빠른 체크 버튼 클릭 시 백그라운드 콜백 URI 전송 (고유 path 지정)
                 if (topHabitId != -1) {
                     val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
                         context,
-                        Uri.parse("habit3sec://toggle?id=$topHabitId")
+                        Uri.parse("habit3sec://toggle/$topHabitId?id=$topHabitId")
                     )
                     setOnClickPendingIntent(R.id.widget_2x2_quick_check_btn, backgroundIntent)
                 }

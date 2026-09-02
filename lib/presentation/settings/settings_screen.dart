@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/backup_service.dart';
+import '../../core/services/home_widget_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../common/help_guide_dialog.dart';
@@ -16,6 +18,19 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _allNotificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSetting();
+  }
+
+  Future<void> _loadNotificationSetting() async {
+    final enabled = await NotificationService.isAllNotificationsEnabled();
+    if (mounted) {
+      setState(() => _allNotificationsEnabled = enabled);
+    }
+  }
 
   Widget _buildSectionHeader(String title, IconData icon, BuildContext context) {
     return Padding(
@@ -222,7 +237,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 2. 알림 설정 섹션
+          // 2. 바탕화면 위젯 설정 (1초 빠른 체크)
+          _buildSectionHeader('바탕화면 위젯 (1초 빠른 체크)', Icons.widgets_outlined, context),
+          Card(
+            margin: EdgeInsets.zero,
+            color: context.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: context.surfaceBorder),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.touch_app_rounded,
+                          color: AppColors.primaryLight,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '스마트폰 홈 화면에서 원터치 체크',
+                              style: TextStyle(
+                                color: context.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              '앱을 켜지 않고도 바탕화면에서 오늘 해야 할 습관을 바로 확인하고 터치 한 번으로 즉시 완료할 수 있습니다.',
+                              style: TextStyle(
+                                color: context.textMuted,
+                                fontSize: 12.5,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Divider(height: 1, color: context.surfaceBorder),
+                  const SizedBox(height: 14),
+                  // 4x2 위젯 옵션
+                  _buildWidgetOptionTile(
+                    title: '4x2 체크리스트 위젯',
+                    subtitle: '오늘 해야 할 습관 목록 표시 & 원터치 완료',
+                    badge: '추천',
+                    badgeColor: AppColors.primaryLight,
+                    icon: Icons.view_agenda_rounded,
+                    onAdd: () => _handlePinWidget(is4x2: true),
+                    context: context,
+                  ),
+                  const SizedBox(height: 10),
+                  // 2x2 위젯 옵션
+                  _buildWidgetOptionTile(
+                    title: '2x2 퀵 대시보드 위젯',
+                    subtitle: '오늘 달성률(%) 강조 & 1순위 습관 빠른 완료',
+                    badge: '심플',
+                    badgeColor: AppColors.success,
+                    icon: Icons.dashboard_customize_rounded,
+                    onAdd: () => _handlePinWidget(is4x2: false),
+                    context: context,
+                  ),
+                  const SizedBox(height: 10),
+                  // 위젯 사용 팁 버튼
+                  InkWell(
+                    onTap: () => _showWidgetGuideDialog(context),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.help_outline_rounded,
+                            size: 15,
+                            color: AppColors.primaryLight,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            '위젯 사용 팁 및 수동 추가 방법 보기',
+                            style: TextStyle(
+                              color: AppColors.primaryLight,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 3. 알림 설정 섹션
           _buildSectionHeader('알림', Icons.notifications_none_rounded, context),
           Card(
             margin: EdgeInsets.zero,
@@ -246,14 +375,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: _allNotificationsEnabled,
                   activeTrackColor: AppColors.primary,
                   activeThumbColor: Colors.white,
-                  onChanged: (val) {
+                  onChanged: (val) async {
                     setState(() => _allNotificationsEnabled = val);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(val ? '알림이 켜졌습니다.' : '모든 알림이 꺼졌습니다.'),
-                        duration: const Duration(seconds: 1),
-                      ),
+                    final habitProvider =
+                        Provider.of<HabitProvider>(context, listen: false);
+                    await NotificationService.setAllNotificationsEnabled(
+                      val,
+                      habitProvider.habits,
                     );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            val
+                                ? '모든 습관 알림이 활성화되었습니다.'
+                                : '모든 알림이 해제되었습니다.',
+                          ),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
                   },
                 ),
               ],
@@ -781,6 +922,459 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('확인', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handlePinWidget({required bool is4x2}) async {
+    final name = is4x2 ? '4x2 체크리스트 위젯' : '2x2 퀵 대시보드 위젯';
+    final success = is4x2
+        ? await HomeWidgetService.pinWidget4x2()
+        : await HomeWidgetService.pinWidget2x2();
+
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('홈 화면에 [$name] 추가 창이 열렸습니다.'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      _showWidgetGuideDialog(context);
+    }
+  }
+
+  void _showWidgetGuideDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: context.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: context.surfaceBorder, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. 프리미엄 그라데이션 헤더
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withValues(alpha: 0.22),
+                      AppColors.primaryLight.withValues(alpha: 0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: AppColors.primaryLight.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.bolt_rounded, size: 14, color: AppColors.primaryLight),
+                              SizedBox(width: 4),
+                              Text(
+                                '3초 습관 위젯 200% 활용법',
+                                style: TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        InkWell(
+                          onTap: () => Navigator.of(ctx).pop(),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(Icons.close_rounded, size: 20, color: context.textMuted),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '바탕화면 위젯 사용 & 추가 가이드',
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 17.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '앱을 켜지 않고도 홈 화면에서 1초 만에 실천하고 체크하세요.',
+                      style: TextStyle(
+                        color: context.textMuted,
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 2. 가이드 카드 리스트 (스크롤 지원)
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFeatureCard(
+                        icon: Icons.check_circle_outline_rounded,
+                        iconColor: AppColors.success,
+                        title: '원터치 즉시 완료 & 해제 (토글)',
+                        desc: '위젯 우측의 [○]을 누르면 즉시 [✓]로 완료되며 달성률이 갱신됩니다. 다시 누르면 언제든 완료 취소(해제)할 수 있습니다.',
+                        badge: '양방향 토글',
+                        badgeColor: AppColors.success,
+                        context: context,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildFeatureCard(
+                        icon: Icons.repeat_rounded,
+                        iconColor: AppColors.primaryLight,
+                        title: '회차형 습관 단계별 카운팅 (+1)',
+                        desc: '물마시기, 푸시업 등 목표 횟수가 있는 습관은 [+1] 버튼으로 1회씩 누적되며, 목표 달성 시 자동으로 [✓] 완료됩니다.',
+                        badge: '실시간 잔수/횟수 표시',
+                        badgeColor: AppColors.primaryLight,
+                        context: context,
+                      ),
+                      const SizedBox(height: 10),
+                      _buildFeatureCard(
+                        icon: Icons.swap_vert_rounded,
+                        iconColor: Colors.amber,
+                        title: '전체 목록 부드러운 스크롤 & 순서 유지',
+                        desc: '습관이 5개, 10개 이상이어도 위젯 내에서 위아래로 스크롤하여 모두 볼 수 있으며, 앱 내 설정 순서가 100% 유지됩니다.',
+                        badge: '스크롤 지원',
+                        badgeColor: Colors.amber,
+                        context: context,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // 수동 추가 방법 안내 박스
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: context.surfaceBorder.withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: context.surfaceBorder,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.add_to_home_screen_rounded,
+                                  size: 16,
+                                  color: AppColors.primaryLight,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '스마트폰 홈 화면에 수동으로 추가하는 법',
+                                  style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            _buildManualStep('1', '스마트폰 홈 화면의 빈 곳을 1~2초간 길게 터치합니다.', context),
+                            const SizedBox(height: 6),
+                            _buildManualStep('2', '하단에 뜨는 메뉴에서 [위젯 (Widgets)]을 선택합니다.', context),
+                            const SizedBox(height: 6),
+                            _buildManualStep('3', '[3초 습관]을 찾아 4x2 또는 2x2 위젯을 원하는 위치로 드래그합니다.', context),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. 하단 확인 버튼
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 46,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      '확인했어요 ✨',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String desc,
+    required String badge,
+    required Color badgeColor,
+    required BuildContext context,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.surfaceBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          color: badgeColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    color: context.textMuted,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManualStep(String number, String text, BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 17,
+          height: 17,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: AppColors.primaryLight,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: context.textMuted,
+              fontSize: 11.5,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWidgetOptionTile({
+    required String title,
+    required String subtitle,
+    required String badge,
+    required Color badgeColor,
+    required IconData icon,
+    required VoidCallback onAdd,
+    required BuildContext context,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.isDarkMode
+            ? Colors.white.withValues(alpha: 0.03)
+            : Colors.black.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.surfaceBorder, width: 0.8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: badgeColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge,
+                        style: TextStyle(
+                          color: badgeColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: context.textMuted,
+                    fontSize: 11.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.tonal(
+            onPressed: onAdd,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, size: 15),
+                SizedBox(width: 2),
+                Text('추가', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
         ],
       ),
