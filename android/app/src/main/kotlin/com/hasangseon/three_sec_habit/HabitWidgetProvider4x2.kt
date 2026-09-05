@@ -29,8 +29,49 @@ class HabitWidgetProvider4x2 : HomeWidgetProvider() {
                 )
                 setOnClickPendingIntent(R.id.widget_4x2_header, headerIntent)
 
+                // 테마 모드 판단 (앱 설정 및 시스템 다크모드 연동)
+                val themeMode = widgetData.getString("widget_theme_mode", "system") ?: "system"
+                val isSystemDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                val isDark = when (themeMode) {
+                    "dark" -> true
+                    "light" -> false
+                    else -> isSystemDark
+                }
+
+                // 배경 및 칩 Drawable 동적 적용
+                setInt(
+                    R.id.widget_root_4x2,
+                    "setBackgroundResource",
+                    if (isDark) R.drawable.widget_background_dark else R.drawable.widget_background_light
+                )
+                setInt(
+                    R.id.widget_4x2_progress_summary,
+                    "setBackgroundResource",
+                    if (isDark) R.drawable.widget_success_chip_bg_dark else R.drawable.widget_success_chip_bg_light
+                )
+
+                setTextColor(
+                    R.id.widget_4x2_title,
+                    if (isDark) 0xFFA78BFA.toInt() else 0xFF7C3AED.toInt()
+                )
+
                 val summary = widgetData.getString("widget_4x2_summary", "0 / 0 완료") ?: "0 / 0 완료"
                 setTextViewText(R.id.widget_4x2_progress_summary, summary)
+                setTextColor(
+                    R.id.widget_4x2_progress_summary,
+                    if (isDark) 0xFF34D399.toInt() else 0xFF059669.toInt()
+                )
+
+                setInt(
+                    R.id.widget_4x2_divider,
+                    "setBackgroundColor",
+                    if (isDark) 0xFF1E293B.toInt() else 0xFFF1F5F9.toInt()
+                )
+
+                setTextColor(
+                    R.id.widget_empty_view,
+                    if (isDark) 0xFF64748B.toInt() else 0xFF94A3B8.toInt()
+                )
 
                 // RemoteViewsService 연결
                 val serviceIntent = Intent(context, HabitListWidgetService::class.java).apply {

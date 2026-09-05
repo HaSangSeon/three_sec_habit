@@ -7,6 +7,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/utils/date_util.dart';
 import '../../models/habit.dart';
 import '../../providers/habit_provider.dart';
+import '../common/time_picker_select_dialog.dart';
 import '../home/widgets/ad_banner_slot.dart';
 
 /// 습관 추가 및 편집 화면 (프리미엄 UI, 정밀한 정렬 및 디테일)
@@ -113,9 +114,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
   }
 
   Future<void> _selectFixedTime() async {
-    final picked = await showTimePicker(
+    final picked = await TimePickerSelectDialog.show(
       context: context,
       initialTime: _reminderTime ?? const TimeOfDay(hour: 8, minute: 0),
+      title: '지정 알림 시간 설정',
     );
     if (picked != null) {
       setState(() {
@@ -126,9 +128,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
   }
 
   Future<void> _selectStartTime() async {
-    final picked = await showTimePicker(
+    final picked = await TimePickerSelectDialog.show(
       context: context,
       initialTime: _reminderStartTime ?? const TimeOfDay(hour: 9, minute: 0),
+      title: '알림 시작 시간 설정',
     );
     if (picked != null) {
       setState(() => _reminderStartTime = picked);
@@ -136,9 +139,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
   }
 
   Future<void> _selectEndTime() async {
-    final picked = await showTimePicker(
+    final picked = await TimePickerSelectDialog.show(
       context: context,
       initialTime: _reminderEndTime ?? const TimeOfDay(hour: 21, minute: 0),
+      title: '알림 종료 시간 설정',
     );
     if (picked != null) {
       setState(() => _reminderEndTime = picked);
@@ -153,6 +157,34 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     } catch (_) {}
 
     final title = _titleController.text.trim();
+
+    // 간격 알림 선택 시 시작 시간 < 종료 시간 유효성 검증
+    if (_reminderEnabled && _reminderType == ReminderType.interval) {
+      final startMin =
+          (_reminderStartTime?.hour ?? 9) * 60 + (_reminderStartTime?.minute ?? 0);
+      final endMin =
+          (_reminderEndTime?.hour ?? 21) * 60 + (_reminderEndTime?.minute ?? 0);
+      if (endMin <= startMin) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('알림 종료 시간은 시작 시간보다 늦어야 합니다.')),
+              ],
+            ),
+            backgroundColor: AppColors.fireOrange,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        return;
+      }
+    }
+
     final unitText = _unitController.text.trim().isNotEmpty
         ? _unitController.text.trim()
         : '회';
@@ -1293,73 +1325,121 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                       Divider(color: context.surfaceBorder, height: 1),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '일주일에 몇 번?',
-                              style: TextStyle(
-                                color: context.textPrimary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                GestureDetector(
-                                  onTap: _repeatCount > 1
-                                      ? () => setState(() => _repeatCount--)
-                                      : null,
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: context.bg,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: context.surfaceBorder),
-                                    ),
-                                    child: Icon(
-                                      Icons.remove_rounded,
-                                      size: 18,
-                                      color: _repeatCount > 1
-                                          ? context.textPrimary
-                                          : context.textMuted.withValues(alpha: 0.4),
-                                    ),
+                                Text(
+                                  '일주일에 몇 번?',
+                                  style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                                  child: Text(
-                                    '주 $_repeatCount회',
-                                    style: const TextStyle(
-                                      color: AppColors.primaryLight,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
+                                Row(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: _repeatCount > 1
+                                          ? () => setState(() => _repeatCount--)
+                                          : null,
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: context.bg,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: context.surfaceBorder),
+                                        ),
+                                        child: Icon(
+                                          Icons.remove_rounded,
+                                          size: 18,
+                                          color: _repeatCount > 1
+                                              ? context.textPrimary
+                                              : context.textMuted.withValues(alpha: 0.4),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: _repeatCount < 7
-                                      ? () => setState(() => _repeatCount++)
-                                      : null,
-                                  child: Container(
-                                    width: 32,
-                                    height: 32,
-                                    decoration: BoxDecoration(
-                                      color: context.bg,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: context.surfaceBorder),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                                      child: Text(
+                                        '주 $_repeatCount회',
+                                        style: const TextStyle(
+                                          color: AppColors.primaryLight,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
                                     ),
-                                    child: Icon(
-                                      Icons.add_rounded,
-                                      size: 18,
-                                      color: _repeatCount < 7
-                                          ? context.textPrimary
-                                          : context.textMuted.withValues(alpha: 0.4),
+                                    GestureDetector(
+                                      onTap: _repeatCount < 7
+                                          ? () => setState(() => _repeatCount++)
+                                          : null,
+                                      child: Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: context.bg,
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: context.surfaceBorder),
+                                        ),
+                                        child: Icon(
+                                          Icons.add_rounded,
+                                          size: 18,
+                                          color: _repeatCount < 7
+                                              ? context.textPrimary
+                                              : context.textMuted.withValues(alpha: 0.4),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
+                            ),
+                            Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: context.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: context.surfaceBorder),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 14.5,
+                                        color: AppColors.primaryLight,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '주 $_repeatCount회 동작 안내',
+                                        style: TextStyle(
+                                          color: context.textPrimary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '• 요일을 미리 정하지 않고 이번 주(월~일) 중 실천한 날 자유롭게 체크합니다.\n'
+                                    '• 목표 횟수($_repeatCount회)를 다 채울 때까지 일주일 내내 실천 목록에 표시되며 알림이 울립니다.\n'
+                                    '• 매주 일요일 자정(24:00)에 주간 카운트가 마감되고 새로운 주가 시작됩니다.',
+                                    style: TextStyle(
+                                      color: context.textSecondary,
+                                      fontSize: 11.5,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1453,7 +1533,42 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                             value: _reminderEnabled,
                             activeTrackColor: AppColors.primary,
                             activeThumbColor: Colors.white,
-                            onChanged: (val) {
+                            onChanged: (val) async {
+                              if (val) {
+                                final isGranted = await NotificationService
+                                    .checkSystemNotificationPermission();
+                                if (!isGranted && mounted) {
+                                  final requested = await NotificationService
+                                      .requestSystemNotificationPermission();
+                                  if (!requested && mounted) {
+                                    ScaffoldMessenger.of(context)
+                                        .hideCurrentSnackBar();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Row(
+                                          children: [
+                                            Icon(
+                                                Icons
+                                                    .notifications_off_rounded,
+                                                color: Colors.white,
+                                                size: 18),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                  '기기 설정에서 알림 권한을 켜주셔야 알림이 정상적으로 울립니다.'),
+                                            ),
+                                          ],
+                                        ),
+                                        backgroundColor: AppColors.fireOrange,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
                               setState(() => _reminderEnabled = val);
                             },
                           ),
@@ -1468,15 +1583,19 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: InkWell(
                           onTap: () async {
-                            await NotificationService.showTestNotification(
+                            final success = await NotificationService.showTestNotification(
                               title: '⚡ [${_titleController.text.trim().isEmpty ? '습관 알림' : _titleController.text.trim()}] 실천 시간!',
                               body: '체크 한 번, 3초 컷 ⚡️',
                             );
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('⚡ 테스트 알림이 발송되었습니다!'),
-                                  duration: Duration(seconds: 2),
+                                SnackBar(
+                                  content: Text(
+                                    success
+                                        ? '⚡ 테스트 알림이 발송되었습니다! (화면 상단바 확인)'
+                                        : '⚠️ 알림 권한이 차단되어 있습니다. 알림 설정을 허용해주세요.',
+                                  ),
+                                  duration: const Duration(seconds: 2),
                                 ),
                               );
                             }

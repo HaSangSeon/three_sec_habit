@@ -21,7 +21,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String channelId = 'three_sec_habit_reminders';
+  static const String channelId = 'three_sec_habit_reminders_v2';
   static const String channelName = '습관 실천 알림';
   static const String channelDesc = '설정된 시간과 간격에 맞춰 습관 실천을 알립니다.';
   static const String prefAllNotificationsKey = 'all_notifications_enabled';
@@ -35,11 +35,14 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation(currentTimeZone));
       debugPrint('⏰ [NotificationService] Timezone configured to: $currentTimeZone');
     } catch (e) {
-      debugPrint('⏰ [NotificationService] Failed to set native timezone, fallback: $e');
+      debugPrint('⏰ [NotificationService] Failed to set native timezone, fallback to Asia/Seoul: $e');
+      try {
+        tz.setLocalLocation(tz.getLocation('Asia/Seoul'));
+      } catch (_) {}
     }
 
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/launcher_icon');
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -59,7 +62,7 @@ class NotificationService {
         },
       );
 
-      // 안드로이드 알림 채널 등록
+      // 안드로이드 알림 채널 등록 (헤드업 팝업 보장을 위해 Importance.max)
       final androidPlatform = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
@@ -69,15 +72,50 @@ class NotificationService {
             channelId,
             channelName,
             description: channelDesc,
-            importance: Importance.high,
+            importance: Importance.max,
             playSound: true,
             enableVibration: true,
+            showBadge: true,
           ),
         );
         await androidPlatform.requestNotificationsPermission();
       }
     } catch (e) {
       debugPrint('NotificationService initialize error: $e');
+    }
+  }
+
+  /// 안드로이드 13+ 시스템 알림 권한 허용 여부 실시간 확인
+  static Future<bool> checkSystemNotificationPermission() async {
+    try {
+      final androidPlatform = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlatform != null) {
+        final enabled = await androidPlatform.areNotificationsEnabled();
+        return enabled ?? true;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error checking notification permission: $e');
+      return true;
+    }
+  }
+
+  /// 안드로이드 시스템 알림 권한 요청
+  static Future<bool> requestSystemNotificationPermission() async {
+    try {
+      final androidPlatform = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlatform != null) {
+        final granted = await androidPlatform.requestNotificationsPermission();
+        return granted ?? false;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Error requesting notification permission: $e');
+      return false;
     }
   }
 
@@ -148,9 +186,9 @@ class NotificationService {
           channelId,
           channelName,
           channelDescription: channelDesc,
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          importance: Importance.max,
+          priority: Priority.max,
+          icon: '@mipmap/launcher_icon',
           playSound: true,
           enableVibration: true,
         ),
@@ -164,41 +202,70 @@ class NotificationService {
       if (habit.reminderType == ReminderType.fixed &&
           habit.reminderTime != null) {
         // ==========================================
-        // 1. 지정 시각 알림 (오늘 완료 여부에 따른 스마트 스케줄링)
+        // 1. 지정 시각 알림 (오늘 완료 여부 및 요일별 다중 슬롯 스케줄링)
         // ==========================================
         final parts = habit.reminderTime!.split(':');
         if (parts.length >= 2) {
           final hour = int.tryParse(parts[0]) ?? 8;
           final minute = int.tryParse(parts[1]) ?? 0;
 
-          var scheduledDate =
-              tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+          final isDaily = habit.repeatType == RepeatType.daily ||
+              habit.repeatType == RepeatType.weeklyCount ||
+              habit.repeatDays.length == 7;
 
-          if (isCompletedToday || scheduledDate.isBefore(now)) {
-            scheduledDate = scheduledDate.add(const Duration(days: 1));
-          }
+          if (isDaily) {
+            // 매일 반복: DateTimeComponents.time으로 1회 등록
+            var scheduledDate =
+                tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
 
-          // 특정 요일 반복인 경우 유효한 다음 요일로 이동
-          if (habit.repeatType == RepeatType.weeklyDays &&
-              habit.repeatDays.isNotEmpty) {
-            while (!habit.repeatDays.contains(scheduledDate.weekday)) {
+            if (isCompletedToday || scheduledDate.isBefore(now)) {
               scheduledDate = scheduledDate.add(const Duration(days: 1));
             }
-          }
 
-          final notifId = _generateNotificationId(habit.id!, 0);
-          await _notificationsPlugin.zonedSchedule(
-            id: notifId,
-            title: title,
-            body: body,
-            scheduledDate: scheduledDate,
-            notificationDetails: notificationDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            matchDateTimeComponents: (habit.repeatType == RepeatType.weeklyDays)
-                ? DateTimeComponents.dayOfWeekAndTime
-                : DateTimeComponents.time,
-            payload: 'habit_${habit.id}',
-          );
+            final notifId = _generateNotificationId(habit.id!, 0);
+            await _notificationsPlugin.zonedSchedule(
+              id: notifId,
+              title: title,
+              body: body,
+              scheduledDate: scheduledDate,
+              notificationDetails: notificationDetails,
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              matchDateTimeComponents: DateTimeComponents.time,
+              payload: 'habit_${habit.id}',
+            );
+          } else if (habit.repeatDays.isNotEmpty) {
+            // 요일별 반복: 선택된 모든 요일(예: 월~금 각각)에 대해 개별 등록!
+            for (final day in habit.repeatDays) {
+              int daysUntil = (day - now.weekday) % 7;
+              if (daysUntil < 0) daysUntil += 7;
+
+              var scheduledDate = tz.TZDateTime(
+                tz.local,
+                now.year,
+                now.month,
+                now.day,
+                hour,
+                minute,
+              ).add(Duration(days: daysUntil));
+
+              // 오늘이 해당 요일인데 이미 시간이 지났거나 완료된 경우 다음 주로 연기
+              if (daysUntil == 0 && (isCompletedToday || scheduledDate.isBefore(now))) {
+                scheduledDate = scheduledDate.add(const Duration(days: 7));
+              }
+
+              final notifId = _generateNotificationId(habit.id!, day);
+              await _notificationsPlugin.zonedSchedule(
+                id: notifId,
+                title: title,
+                body: body,
+                scheduledDate: scheduledDate,
+                notificationDetails: notificationDetails,
+                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+                payload: 'habit_${habit.id}_day_$day',
+              );
+            }
+          }
         }
       } else if (habit.reminderType == ReminderType.interval) {
         // ==========================================
@@ -222,51 +289,89 @@ class NotificationService {
         final endTotalMin = endHour * 60 + endMinute;
 
         if (endTotalMin > startTotalMin) {
-          int currentSlotMin = startTotalMin;
-          int subId = 0;
+          final isDaily = habit.repeatType == RepeatType.daily ||
+              habit.repeatType == RepeatType.weeklyCount ||
+              habit.repeatDays.length == 7;
 
-          while (currentSlotMin <= endTotalMin && subId < 25) {
-            final slotHour = currentSlotMin ~/ 60;
-            final slotMin = currentSlotMin % 60;
+          if (isDaily) {
+            // 매일 간격 알림 (최대 50개 슬롯 지원으로 30분 간격도 저녁 21시까지 완벽 수용)
+            int currentSlotMin = startTotalMin;
+            int slotIdx = 0;
 
-            var scheduledDate = tz.TZDateTime(
-              tz.local,
-              now.year,
-              now.month,
-              now.day,
-              slotHour,
-              slotMin,
-            );
+            while (currentSlotMin <= endTotalMin && slotIdx < 50) {
+              final slotHour = currentSlotMin ~/ 60;
+              final slotMin = currentSlotMin % 60;
 
-            if (isCompletedToday || scheduledDate.isBefore(now)) {
-              scheduledDate = scheduledDate.add(const Duration(days: 1));
-            }
+              var scheduledDate = tz.TZDateTime(
+                tz.local,
+                now.year,
+                now.month,
+                now.day,
+                slotHour,
+                slotMin,
+              );
 
-            // 특정 요일 반복인 경우 유효한 요일로 이동
-            if (habit.repeatType == RepeatType.weeklyDays &&
-                habit.repeatDays.isNotEmpty) {
-              while (!habit.repeatDays.contains(scheduledDate.weekday)) {
+              if (isCompletedToday || scheduledDate.isBefore(now)) {
                 scheduledDate = scheduledDate.add(const Duration(days: 1));
               }
+
+              final notifId = _generateNotificationId(habit.id!, slotIdx);
+              await _notificationsPlugin.zonedSchedule(
+                id: notifId,
+                title: title,
+                body: body,
+                scheduledDate: scheduledDate,
+                notificationDetails: notificationDetails,
+                androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                matchDateTimeComponents: DateTimeComponents.time,
+                payload: 'habit_${habit.id}_slot_$slotIdx',
+              );
+
+              slotIdx++;
+              currentSlotMin += intervalMinutes;
             }
+          } else if (habit.repeatDays.isNotEmpty) {
+            // 요일별 간격 알림: 각 요일별 최대 50개 슬롯 (day * 50 + slotIdx)
+            for (final day in habit.repeatDays) {
+              int daysUntil = (day - now.weekday) % 7;
+              if (daysUntil < 0) daysUntil += 7;
 
-            final notifId = _generateNotificationId(habit.id!, subId);
-            await _notificationsPlugin.zonedSchedule(
-              id: notifId,
-              title: title,
-              body: body,
-              scheduledDate: scheduledDate,
-              notificationDetails: notificationDetails,
-              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-              matchDateTimeComponents:
-                  (habit.repeatType == RepeatType.weeklyDays)
-                      ? DateTimeComponents.dayOfWeekAndTime
-                      : DateTimeComponents.time,
-              payload: 'habit_${habit.id}_slot_$subId',
-            );
+              int currentSlotMin = startTotalMin;
+              int slotIdx = 0;
 
-            subId++;
-            currentSlotMin += intervalMinutes;
+              while (currentSlotMin <= endTotalMin && slotIdx < 50) {
+                final slotHour = currentSlotMin ~/ 60;
+                final slotMin = currentSlotMin % 60;
+
+                var scheduledDate = tz.TZDateTime(
+                  tz.local,
+                  now.year,
+                  now.month,
+                  now.day,
+                  slotHour,
+                  slotMin,
+                ).add(Duration(days: daysUntil));
+
+                if (daysUntil == 0 && (isCompletedToday || scheduledDate.isBefore(now))) {
+                  scheduledDate = scheduledDate.add(const Duration(days: 7));
+                }
+
+                final notifId = _generateNotificationId(habit.id!, day * 50 + slotIdx);
+                await _notificationsPlugin.zonedSchedule(
+                  id: notifId,
+                  title: title,
+                  body: body,
+                  scheduledDate: scheduledDate,
+                  notificationDetails: notificationDetails,
+                  androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+                  matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+                  payload: 'habit_${habit.id}_day_${day}_slot_$slotIdx',
+                );
+
+                slotIdx++;
+                currentSlotMin += intervalMinutes;
+              }
+            }
           }
         }
       }
@@ -275,10 +380,10 @@ class NotificationService {
     }
   }
 
-  /// 습관 알림 취소 (최대 25개 서브 ID 슬롯 일괄 취소)
+  /// 습관 알림 취소 (최대 500개 서브 ID 슬롯 일괄 취소)
   static Future<void> cancelHabitReminder(int habitId) async {
     try {
-      for (int subId = 0; subId < 25; subId++) {
+      for (int subId = 0; subId < 500; subId++) {
         final notifId = _generateNotificationId(habitId, subId);
         await _notificationsPlugin.cancel(id: notifId);
       }
@@ -298,19 +403,31 @@ class NotificationService {
   }
 
   /// 테스트 즉시 알림 발송 (상단바 확인용)
-  static Future<void> showTestNotification({
+  static Future<bool> showTestNotification({
     String title = '⚡ [3초 습관] 테스트 알림',
     String body = '알림이 정상적으로 작동하고 있습니다! 체크 한 번, 3초 컷 ⚡️',
   }) async {
     try {
+      // 알림 권한 재요청 / 확인
+      final androidPlatform = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlatform != null) {
+        final granted = await androidPlatform.requestNotificationsPermission();
+        if (granted == false) {
+          debugPrint('Notification permission denied by user.');
+          return false;
+        }
+      }
+
       const notificationDetails = NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
           channelName,
           channelDescription: channelDesc,
           importance: Importance.max,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          priority: Priority.max,
+          icon: '@mipmap/launcher_icon',
           playSound: true,
           enableVibration: true,
         ),
@@ -326,13 +443,15 @@ class NotificationService {
         notificationDetails: notificationDetails,
         payload: 'test_notification',
       );
+      return true;
     } catch (e) {
       debugPrint('Error showing test notification: $e');
+      return false;
     }
   }
 
-  /// 고유 Notification ID 생성 (습관 ID * 100 + subId)
+  /// 고유 Notification ID 생성 (습관 ID * 1000 + subId, 최대 500개 서브 슬롯 수용)
   static int _generateNotificationId(int habitId, int subId) {
-    return (habitId * 100 + subId).abs() % 2147483647;
+    return (habitId * 1000 + subId).abs() % 2147483647;
   }
 }

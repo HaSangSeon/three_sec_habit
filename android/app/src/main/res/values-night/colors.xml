@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#0F172A</color>
+    <color name="splash_background">#0F172A</color>
+
+    <!-- 위젯 다크 모드 컬러 시스템 -->
+    <color name="widget_bg">#0F172A</color>
+    <color name="widget_border">#1E293B</color>
+    <color name="widget_card_bg">#1E293B</color>
+    <color name="widget_card_border">#334155</color>
+    <color name="widget_text_primary">#F8FAFC</color>
+    <color name="widget_text_secondary">#94A3B8</color>
+    <color name="widget_text_muted">#64748B</color>
+    <color name="widget_accent">#A78BFA</color>
+    <color name="widget_accent_bg">#2E1065</color>
+    <color name="widget_success">#34D399</color>
+    <color name="widget_success_bg">#064E3B</color>
+    <color name="widget_divider">#1E293B</color>
+</resources>

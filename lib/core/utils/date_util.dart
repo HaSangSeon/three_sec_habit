@@ -44,6 +44,11 @@ class DateUtil {
     return dateStr == today();
   }
 
+  /// 두 날짜가 같은 날(연-월-일)인지 확인
+  static bool isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   /// 요일 번호 (1: 월요일 ~ 7: 일요일)
   static int getWeekday(DateTime date) {
     return date.weekday;

@@ -2,10 +2,10 @@ package com.hasangseon.three_sec_habit
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.net.Uri
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
+import androidx.core.content.ContextCompat
 import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 
@@ -75,14 +75,37 @@ class HabitListRemoteViewsFactory(
         val item = habits[position]
         val views = RemoteViews(context.packageName, R.layout.widget_item_habit)
 
+        // 테마 모드 판단 (앱 설정 및 시스템 다크모드 연동)
+        val widgetData = HomeWidgetPlugin.getData(context)
+        val themeMode = widgetData.getString("widget_theme_mode", "system") ?: "system"
+        val isSystemDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val isDark = when (themeMode) {
+            "dark" -> true
+            "light" -> false
+            else -> isSystemDark
+        }
+
+        // 아이템 카드 배경 동적 적용
+        views.setInt(
+            R.id.widget_item_root,
+            "setBackgroundResource",
+            if (isDark) R.drawable.widget_card_bg_dark else R.drawable.widget_card_bg_light
+        )
+
         views.setTextViewText(R.id.widget_item_title, item.title)
+        views.setTextColor(
+            R.id.widget_item_title,
+            if (isDark) 0xFFF8FAFC.toInt() else 0xFF0F172A.toInt()
+        )
+
         views.setTextViewText(R.id.widget_item_check_btn, item.btnText)
 
-        if (item.isDone) {
-            views.setTextColor(R.id.widget_item_check_btn, Color.parseColor("#10B981"))
+        val checkColor = if (item.isDone) {
+            if (isDark) 0xFF34D399.toInt() else 0xFF059669.toInt()
         } else {
-            views.setTextColor(R.id.widget_item_check_btn, Color.parseColor("#8B5CF6"))
+            if (isDark) 0xFFA78BFA.toInt() else 0xFF7C3AED.toInt()
         }
+        views.setTextColor(R.id.widget_item_check_btn, checkColor)
 
         // FillInIntent: 백그라운드 토글 액션 브로드캐스트로 전달
         val fillInIntent = Intent().apply {

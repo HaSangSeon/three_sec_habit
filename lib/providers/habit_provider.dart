@@ -40,10 +40,13 @@ class HabitProvider extends ChangeNotifier {
 
     try {
       _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
-      // 홈 위젯 동기화
-      HomeWidgetService.updateWidgetData(_habits);
-      // 스마트 알림 일괄 최신화
-      NotificationService.rescheduleAllHabits(_habits);
+      final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
+      if (isToday) {
+        // 홈 위젯 동기화 (오늘 기준 데이터로만 위젯 갱신)
+        HomeWidgetService.updateWidgetData(_habits);
+        // 스마트 알림 일괄 최신화 (오늘 기준 완료 상태로만 스케줄링)
+        NotificationService.rescheduleAllHabits(_habits);
+      }
     } catch (e) {
       debugPrint('Error loading habits: $e');
     } finally {
@@ -96,11 +99,14 @@ class HabitProvider extends ChangeNotifier {
         isCompleted: nextState,
         targetCount: 1,
       );
-      await NotificationService.scheduleHabitReminder(
-        target.habit,
-        isCompletedToday: nextState,
-      );
-      HomeWidgetService.updateWidgetData(_habits);
+      final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
+      if (isToday) {
+        await NotificationService.scheduleHabitReminder(
+          target.habit,
+          isCompletedToday: nextState,
+        );
+        HomeWidgetService.updateWidgetData(_habits);
+      }
     } catch (e) {
       debugPrint('DB Error during toggle: $e');
       _habits[index] = target;
@@ -143,11 +149,14 @@ class HabitProvider extends ChangeNotifier {
         count: newCount,
         targetCount: targetCount,
       );
-      await NotificationService.scheduleHabitReminder(
-        target.habit,
-        isCompletedToday: isNowCompleted,
-      );
-      HomeWidgetService.updateWidgetData(_habits);
+      final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
+      if (isToday) {
+        await NotificationService.scheduleHabitReminder(
+          target.habit,
+          isCompletedToday: isNowCompleted,
+        );
+        HomeWidgetService.updateWidgetData(_habits);
+      }
     } catch (e) {
       debugPrint('DB Error during increment: $e');
       _habits[index] = target;
@@ -188,11 +197,14 @@ class HabitProvider extends ChangeNotifier {
         count: newCount,
         targetCount: targetCount,
       );
-      await NotificationService.scheduleHabitReminder(
-        target.habit,
-        isCompletedToday: isNowCompleted,
-      );
-      HomeWidgetService.updateWidgetData(_habits);
+      final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
+      if (isToday) {
+        await NotificationService.scheduleHabitReminder(
+          target.habit,
+          isCompletedToday: isNowCompleted,
+        );
+        HomeWidgetService.updateWidgetData(_habits);
+      }
     } catch (e) {
       debugPrint('DB Error during decrement: $e');
       _habits[index] = target;
@@ -236,11 +248,14 @@ class HabitProvider extends ChangeNotifier {
         count: safeCount,
         targetCount: targetCount,
       );
-      await NotificationService.scheduleHabitReminder(
-        target.habit,
-        isCompletedToday: isNowCompleted,
-      );
-      HomeWidgetService.updateWidgetData(_habits);
+      final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
+      if (isToday) {
+        await NotificationService.scheduleHabitReminder(
+          target.habit,
+          isCompletedToday: isNowCompleted,
+        );
+        HomeWidgetService.updateWidgetData(_habits);
+      }
     } catch (e) {
       debugPrint('DB Error during setHabitCount: $e');
       _habits[index] = target;
@@ -257,10 +272,20 @@ class HabitProvider extends ChangeNotifier {
     return insertedId;
   }
 
-  /// 습관 수정
+  /// 습관 수정 (선택된 날짜/오늘 로그의 정합성 동기화 포함)
   Future<void> updateHabit(Habit habit) async {
-    await _habitDao.updateHabit(habit);
-    await NotificationService.scheduleHabitReminder(habit);
+    final targetDateStr = DateUtil.formatDate(_selectedDate);
+    await _habitDao.updateHabit(habit, targetDate: targetDateStr);
+
+    // 오늘 해당 습관의 완료 상태를 확인하여 알림 스케줄링 시 스마트 스킵/유지 보장
+    final todayLog = await _habitDao.getHabitLogForDate(
+        habit.id ?? -1, DateUtil.today());
+    final isDoneToday = todayLog?.isCompleted ?? false;
+    await NotificationService.scheduleHabitReminder(
+      habit,
+      isCompletedToday: isDoneToday,
+    );
+
     await loadHabits();
   }
 

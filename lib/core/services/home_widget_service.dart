@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../database/habit_dao.dart';
 import '../utils/date_util.dart';
@@ -121,12 +122,31 @@ class HomeWidgetService {
     }
   }
 
-  /// 핀 위젯 지원 여부 (Android 8.0 이상)
-  static Future<bool> isPinWidgetSupported() async {
+  /// 앱 테마(라이트/다크/시스템)를 네이티브 위젯에 실시간 동기화
+  static Future<void> updateThemeMode(ThemeMode mode) async {
     try {
-      return await HomeWidget.isRequestPinWidgetSupported() ?? false;
-    } catch (_) {
-      return false;
+      WidgetsFlutterBinding.ensureInitialized();
+      await HomeWidget.setAppGroupId(AppConstants.appGroupId);
+      final modeStr = switch (mode) {
+        ThemeMode.dark => 'dark',
+        ThemeMode.light => 'light',
+        ThemeMode.system => 'system',
+      };
+      await HomeWidget.saveWidgetData<String>('widget_theme_mode', modeStr);
+      await HomeWidget.updateWidget(
+        name: AppConstants.appWidgetProvider2x2,
+        androidName: AppConstants.appWidgetProvider2x2,
+        qualifiedAndroidName:
+            'com.hasangseon.three_sec_habit.${AppConstants.appWidgetProvider2x2}',
+      );
+      await HomeWidget.updateWidget(
+        name: AppConstants.appWidgetProvider4x2,
+        androidName: AppConstants.appWidgetProvider4x2,
+        qualifiedAndroidName:
+            'com.hasangseon.three_sec_habit.${AppConstants.appWidgetProvider4x2}',
+      );
+    } catch (e) {
+      debugPrint('Error updating widget theme mode: $e');
     }
   }
 
@@ -144,6 +164,10 @@ class HomeWidgetService {
       final percent = total > 0 ? ((completed / total) * 100).toInt() : 0;
 
       // 1. 공통 요약 데이터
+      final prefs = await SharedPreferences.getInstance();
+      final savedTheme = prefs.getString('user_theme_mode') ?? 'system';
+      await HomeWidget.saveWidgetData<String>('widget_theme_mode', savedTheme);
+
       await HomeWidget.saveWidgetData<String>(
           'widget_progress_text', '$completed / $total');
       await HomeWidget.saveWidgetData<String>(

@@ -157,41 +157,16 @@ class _StatsScreenState extends State<StatsScreen>
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(66),
+        preferredSize: const Size.fromHeight(64),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: context.isDarkMode
-                  ? const [
-                      Color(0xFF0F2B5B),
-                      Color(0xFF1E3A8A),
-                      Color(0xFF1E1B4B),
-                    ]
-                  : const [
-                      Color(0xFF1D4ED8),
-                      Color(0xFF2563EB),
-                      Color(0xFF4F46E5),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: context.bg,
             border: Border(
               bottom: BorderSide(
-                color: context.isDarkMode
-                    ? AppColors.primary.withValues(alpha: 0.3)
-                    : const Color(0xFFDDD6FE),
-                width: 1.2,
+                color: context.surfaceBorder.withValues(alpha: 0.6),
+                width: 0.8,
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: context.isDarkMode
-                    ? AppColors.primary.withValues(alpha: 0.15)
-                    : AppColors.primary.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: SafeArea(
             child: Padding(
@@ -199,30 +174,37 @@ class _StatsScreenState extends State<StatsScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.bar_chart_rounded,
-                        color: Colors.white.withValues(alpha: 0.95),
-                        size: 20,
-                        shadows: [
-                          Shadow(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            blurRadius: 8,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: const Color(0xFF3B82F6).withValues(alpha: context.isDarkMode ? 0.4 : 0.2),
+                            width: 1.0,
                           ),
-                        ],
+                        ),
+                        child: const Icon(
+                          Icons.bar_chart_rounded,
+                          color: Color(0xFF60A5FA),
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
+                      const SizedBox(width: 10),
+                      Text(
                         '통계 & 기록',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textPrimary,
                           fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                          letterSpacing: -0.5,
-                          height: 1.0,
+                          fontSize: 20,
+                          letterSpacing: -0.6,
+                          height: 1.1,
                         ),
                       ),
                     ],
@@ -237,21 +219,15 @@ class _StatsScreenState extends State<StatsScreen>
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? const Color(0xFF1E293B)
-                            : Colors.white,
+                        color: context.surface,
                         border: Border.all(
-                          color: context.isDarkMode
-                              ? const Color(0xFF3B82F6).withValues(alpha: 0.35)
-                              : const Color(0xFFBFDBFE),
+                          color: context.surfaceBorder,
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(
-                              alpha: context.isDarkMode ? 0.25 : 0.12,
-                            ),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -260,8 +236,8 @@ class _StatsScreenState extends State<StatsScreen>
                         context.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                         size: 18,
                         color: context.isDarkMode
-                            ? const Color(0xFFFDE047)
-                            : const Color(0xFF1D4ED8),
+                            ? const Color(0xFFFBBF24)
+                            : context.textSecondary,
                       ),
                     ),
                   ),
@@ -275,21 +251,15 @@ class _StatsScreenState extends State<StatsScreen>
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? const Color(0xFF1E293B)
-                            : Colors.white,
+                        color: context.surface,
                         border: Border.all(
-                          color: context.isDarkMode
-                              ? const Color(0xFF3B82F6).withValues(alpha: 0.35)
-                              : const Color(0xFFBFDBFE),
+                          color: context.surfaceBorder,
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF2563EB).withValues(
-                              alpha: context.isDarkMode ? 0.25 : 0.12,
-                            ),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -297,9 +267,7 @@ class _StatsScreenState extends State<StatsScreen>
                       child: Icon(
                         Icons.help_outline_rounded,
                         size: 18,
-                        color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.9)
-                            : const Color(0xFF1D4ED8),
+                        color: context.textSecondary,
                       ),
                     ),
                   ),

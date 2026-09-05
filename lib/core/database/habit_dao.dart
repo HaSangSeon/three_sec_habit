@@ -30,16 +30,51 @@ class HabitDao {
     );
   }
 
-  /// 습관 정보 수정
-  Future<int> updateHabit(Habit habit) async {
+  /// 습관 정보 수정 (지정 날짜 또는 오늘 날짜의 로그 완료 상태 동기화 포함)
+  Future<int> updateHabit(Habit habit, {String? targetDate}) async {
     final db = await _db;
     if (habit.id == null) return 0;
-    return await db.update(
+    final rowsUpdated = await db.update(
       AppConstants.tableHabits,
       habit.toMap(),
       where: 'id = ?',
       whereArgs: [habit.id],
     );
+
+    // 대상 날짜(전달되지 않으면 오늘)의 로그 정합성 동기화
+    final date = targetDate ?? DateUtil.formatDate(DateTime.now());
+    await resyncHabitLogForDate(habitId: habit.id!, habit: habit, date: date);
+
+    return rowsUpdated;
+  }
+
+  /// 특정 날짜의 습관 로그 완료 상태를 습관의 현재 목표/타입에 맞추어 재동기화 (과거 기록은 보존)
+  Future<void> resyncHabitLogForDate({
+    required int habitId,
+    required Habit habit,
+    required String date,
+  }) async {
+    final db = await _db;
+    final log = await getHabitLogForDate(habitId, date);
+    if (log == null) return;
+
+    bool newIsCompleted;
+    if (log.count <= 0) {
+      newIsCompleted = false;
+    } else if (habit.habitType == HabitType.count) {
+      newIsCompleted = log.count >= habit.targetCount && habit.targetCount > 0;
+    } else {
+      newIsCompleted = log.count >= 1;
+    }
+
+    if (log.isCompleted != newIsCompleted) {
+      await db.update(
+        AppConstants.tableHabitLogs,
+        {'is_completed': newIsCompleted ? 1 : 0},
+        where: 'habit_id = ? AND date = ?',
+        whereArgs: [habitId, date],
+      );
+    }
   }
 
   /// 습관 삭제 (Cascade로 관련 habit_logs도 자동 삭제됨)
@@ -218,7 +253,28 @@ class HabitDao {
       final log = logsMap[habit.id];
       final isScheduled = habit.isScheduledForDate(targetDate);
       final todayCount = log?.count ?? 0;
-      final isCompleted = log?.isCompleted ?? false;
+      final rawIsCompleted = log?.isCompleted ?? false;
+
+      // 방어적 정합성 검증: 뷰 모델 및 화면 표시 시 실제 달성 수치와 목표 수치 정합성 보장
+      bool isCompleted;
+      if (log == null || todayCount <= 0) {
+        isCompleted = false;
+      } else if (habit.habitType == HabitType.count) {
+        isCompleted = todayCount >= habit.targetCount && habit.targetCount > 0;
+      } else {
+        isCompleted = rawIsCompleted;
+      }
+
+      // DB 상태 불일치 시 셀프 힐링 (조회 시점에도 자동 보정)
+      if (log != null && rawIsCompleted != isCompleted) {
+        final db = await _db;
+        await db.update(
+          AppConstants.tableHabitLogs,
+          {'is_completed': isCompleted ? 1 : 0},
+          where: 'habit_id = ? AND date = ?',
+          whereArgs: [habit.id, dateStr],
+        );
+      }
 
       // 스트릭 및 달성률 계산
       final completedDates = await getCompletedDatesForHabit(habit.id!);

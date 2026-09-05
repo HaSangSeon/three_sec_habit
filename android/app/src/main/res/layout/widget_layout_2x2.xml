@@ -6,9 +6,9 @@
     android:background="@drawable/widget_background"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="14dp">
 
-    <!-- 헤더: 앱 타이틀 & 3초 컷 -->
+    <!-- 상단 헤더: 앱 타이틀 & 날짜 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="⚡ 3초 습관"
-            android:textColor="#8B5CF6"
+            android:textColor="@color/widget_accent"
             android:textSize="12sp"
             android:textStyle="bold" />
 
@@ -29,47 +29,51 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="오늘"
-            android:textColor="#94A3B8"
+            android:textColor="@color/widget_text_secondary"
             android:textSize="11sp" />
     </LinearLayout>
 
-    <ImageView
+    <!-- 중앙: 대형 달성 현황 & 퍼센트 뱃지 -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginBottom="8dp"
-        android:background="#334155" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
 
-    <!-- 달성률 숫자 강조 -->
-    <TextView
-        android:id="@+id/widget_2x2_progress_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="3 / 5"
-        android:textColor="#F8FAFC"
-        android:textSize="26sp"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_2x2_progress_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:includeFontPadding="false"
+            android:text="0 / 0"
+            android:textColor="@color/widget_text_primary"
+            android:textSize="30sp"
+            android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/widget_2x2_percent_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="60% 달성 완료"
-        android:textColor="#10B981"
-        android:textSize="12sp"
-        android:textStyle="bold" />
+        <TextView
+            android:id="@+id/widget_2x2_percent_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/widget_success_chip_bg"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="0% 달성"
+            android:textColor="@color/widget_success"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-    <!-- 첫 번째 습관 즉시 체크 버튼 -->
+    <!-- 하단: 1순위 습관 즉시 체크 카드 -->
     <LinearLayout
         android:id="@+id/widget_2x2_quick_check_btn"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_height="40dp"
         android:background="@drawable/widget_card_bg"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingVertical="6dp"
-        android:paddingHorizontal="8dp">
+        android:paddingHorizontal="10dp">
 
         <TextView
             android:id="@+id/widget_2x2_quick_title"
@@ -79,15 +83,17 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:text="빠른 체크하기"
-            android:textColor="#F8FAFC"
-            android:textSize="12sp" />
+            android:textColor="@color/widget_text_primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/widget_2x2_check_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="✓"
-            android:textColor="#10B981"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:gravity="center"
+            android:text="○"
+            android:textColor="@color/widget_accent"
             android:textSize="16sp"
             android:textStyle="bold" />
     </LinearLayout>

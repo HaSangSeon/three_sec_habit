@@ -98,51 +98,125 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SettingsScreen(),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: context.bg,
-          border: Border(
-            top: BorderSide(color: context.surfaceBorder, width: 0.8),
+      bottomNavigationBar: _buildBottomNavBar(context),
+    );
+  }
+
+  /// 슬림 & 프리미엄 하단 탭 내비게이션 바 (높이 54px로 최적화)
+  Widget _buildBottomNavBar(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bg,
+        border: Border(
+          top: BorderSide(
+            color: context.surfaceBorder.withValues(alpha: 0.7),
+            width: 0.8,
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 모든 메뉴(오늘의 습관, 통계, 설정) 공통 가로 100% 하단 배너 광고
-            const AdBannerSlot(),
-            // 하단 내비게이션 바
-            NavigationBar(
-              selectedIndex: _currentTabIndex,
-              onDestinationSelected: (index) {
-                setState(() {
-                  _currentTabIndex = index;
-                });
-              },
-              backgroundColor: context.bg,
-              surfaceTintColor: Colors.transparent,
-              indicatorColor: AppColors.primary.withValues(alpha: 0.2),
-              destinations: const [
-                NavigationDestination(
-                  icon: Icon(Icons.check_circle_outline_rounded),
-                  selectedIcon:
-                      Icon(Icons.check_circle_rounded, color: AppColors.primary),
-                  label: '오늘의 습관',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.bar_chart_rounded),
-                  selectedIcon:
-                      Icon(Icons.bar_chart_rounded, color: AppColors.primary),
-                  label: '통계/기록',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.settings_outlined),
-                  selectedIcon:
-                      Icon(Icons.settings_rounded, color: AppColors.primary),
-                  label: '설정',
-                ),
-              ],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 공통 가로 100% 하단 배너 광고
+          const AdBannerSlot(),
+          // 슬림 & 프리미엄 커스텀 탭 내비게이션 바
+          SafeArea(
+            top: false,
+            bottom: true,
+            child: SizedBox(
+              height: 54,
+              child: Row(
+                children: [
+                  _buildTabItem(
+                    index: 0,
+                    icon: Icons.check_circle_outline_rounded,
+                    activeIcon: Icons.check_circle_rounded,
+                    label: '오늘의 습관',
+                  ),
+                  _buildTabItem(
+                    index: 1,
+                    icon: Icons.bar_chart_outlined,
+                    activeIcon: Icons.bar_chart_rounded,
+                    label: '통계/기록',
+                  ),
+                  _buildTabItem(
+                    index: 2,
+                    icon: Icons.settings_outlined,
+                    activeIcon: Icons.settings_rounded,
+                    label: '설정',
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required int index,
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+  }) {
+    final isSelected = _currentTabIndex == index;
+    final activeColor = context.isDarkMode ? const Color(0xFFA78BFA) : AppColors.primary;
+    final activeTextColor = context.isDarkMode ? const Color(0xFFDDD6FE) : AppColors.primaryDark;
+    final inactiveColor = context.textMuted;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            if (_currentTabIndex != index) {
+              setState(() => _currentTabIndex = index);
+            }
+          },
+          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          highlightColor: Colors.transparent,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 상단 캡슐형 아이콘 하이라이트
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  size: 21,
+                  color: isSelected ? activeColor : inactiveColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // 텍스트 라벨
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                  color: isSelected ? activeTextColor : inactiveColor,
+                  letterSpacing: -0.2,
+                ),
+                child: Text(label),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -157,41 +231,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(68),
+        preferredSize: const Size.fromHeight(64),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: context.isDarkMode
-                  ? const [
-                      Color(0xFF2E0D5E),
-                      Color(0xFF4C1D95),
-                      Color(0xFF3730A3),
-                    ]
-                  : const [
-                      Color(0xFF7C3AED),
-                      Color(0xFF6D28D9),
-                      Color(0xFF5B21B6),
-                    ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: context.bg,
             border: Border(
               bottom: BorderSide(
-                color: context.isDarkMode
-                    ? AppColors.primaryLight.withValues(alpha: 0.4)
-                    : const Color(0xFFC4B5FD),
-                width: 1.4,
+                color: context.surfaceBorder.withValues(alpha: 0.6),
+                width: 0.8,
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: context.isDarkMode
-                    ? const Color(0xFF581C87).withValues(alpha: 0.35)
-                    : const Color(0xFF8B5CF6).withValues(alpha: 0.15),
-                blurRadius: 18,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: SafeArea(
             child: Padding(
@@ -199,31 +248,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 앱 타이틀 — 깔끔한 타이포그래피 스타일
+                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.bolt_rounded,
-                        color: Colors.white.withValues(alpha: 0.95),
-                        size: 20,
-                        shadows: [
-                          Shadow(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            blurRadius: 8,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                          borderRadius: BorderRadius.circular(11),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.4 : 0.2),
+                            width: 1.0,
                           ),
-                        ],
+                        ),
+                        child: const Icon(
+                          Icons.bolt_rounded,
+                          color: AppColors.primaryLight,
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
+                      const SizedBox(width: 10),
+                      Text(
                         '3초 습관',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: context.textPrimary,
                           fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                          letterSpacing: -0.5,
-                          height: 1.0,
+                          fontSize: 20,
+                          letterSpacing: -0.6,
+                          height: 1.1,
                         ),
                       ),
                     ],
@@ -238,21 +293,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? const Color(0xFF2E1065)
-                            : Colors.white,
+                        color: context.surface,
                         border: Border.all(
-                          color: context.isDarkMode
-                              ? AppColors.primary.withValues(alpha: 0.35)
-                              : const Color(0xFFDDD6FE),
+                          color: context.surfaceBorder,
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(
-                              alpha: context.isDarkMode ? 0.2 : 0.1,
-                            ),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -261,8 +310,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         context.isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                         size: 18,
                         color: context.isDarkMode
-                            ? const Color(0xFFFDE047)
-                            : AppColors.primary,
+                            ? const Color(0xFFFBBF24)
+                            : context.textSecondary,
                       ),
                     ),
                   ),
@@ -284,21 +333,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? const Color(0xFF2E1065)
-                            : Colors.white,
+                        color: context.surface,
                         border: Border.all(
-                          color: context.isDarkMode
-                              ? AppColors.primary.withValues(alpha: 0.35)
-                              : const Color(0xFFDDD6FE),
+                          color: context.surfaceBorder,
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(
-                              alpha: context.isDarkMode ? 0.2 : 0.1,
-                            ),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -306,9 +349,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       child: Icon(
                         Icons.calendar_today_rounded,
                         size: 17,
-                        color: context.isDarkMode
-                            ? AppColors.accent
-                            : AppColors.primary,
+                        color: context.textPrimary,
                       ),
                     ),
                   ),
@@ -322,21 +363,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       height: 38,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? const Color(0xFF2E1065)
-                            : Colors.white,
+                        color: context.surface,
                         border: Border.all(
-                          color: context.isDarkMode
-                              ? AppColors.primary.withValues(alpha: 0.35)
-                              : const Color(0xFFDDD6FE),
+                          color: context.surfaceBorder,
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(
-                              alpha: context.isDarkMode ? 0.2 : 0.1,
-                            ),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -344,9 +379,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       child: Icon(
                         Icons.help_outline_rounded,
                         size: 18,
-                        color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.9)
-                            : AppColors.primary,
+                        color: context.textSecondary,
                       ),
                     ),
                   ),

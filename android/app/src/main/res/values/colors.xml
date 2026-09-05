@@ -2,4 +2,18 @@
 <resources>
     <color name="ic_launcher_background">#0F172A</color>
     <color name="splash_background">#0F172A</color>
+
+    <!-- 위젯 라이트 모드 컬러 시스템 -->
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="widget_border">#E2E8F0</color>
+    <color name="widget_card_bg">#F8FAFC</color>
+    <color name="widget_card_border">#E2E8F0</color>
+    <color name="widget_text_primary">#0F172A</color>
+    <color name="widget_text_secondary">#64748B</color>
+    <color name="widget_text_muted">#94A3B8</color>
+    <color name="widget_accent">#7C3AED</color>
+    <color name="widget_accent_bg">#F5F3FF</color>
+    <color name="widget_success">#059669</color>
+    <color name="widget_success_bg">#ECFDF5</color>
+    <color name="widget_divider">#F1F5F9</color>
 </resources>
