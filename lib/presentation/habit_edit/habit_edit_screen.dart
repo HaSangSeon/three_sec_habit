@@ -113,6 +113,22 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     super.dispose();
   }
 
+  String _getReminderSubtitle() {
+    if (!_reminderEnabled) return '알림 미사용';
+
+    final periodStr = switch (_repeatType) {
+      RepeatType.daily => '매일',
+      RepeatType.weeklyDays => _repeatDays.length == 7 ? '매일' : '선택한 요일마다',
+      RepeatType.weeklyCount => '주 $_repeatCount회 달성 전까지',
+    };
+
+    if (_reminderType == ReminderType.fixed) {
+      return '$periodStr 지정된 시간에 알림';
+    } else {
+      return '$periodStr 설정한 시간대마다 반복 알림';
+    }
+  }
+
   Future<void> _selectFixedTime() async {
     final picked = await TimePickerSelectDialog.show(
       context: context,
@@ -1514,11 +1530,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  _reminderEnabled
-                                      ? (_reminderType == ReminderType.fixed
-                                          ? '매일 지정된 시간에 알림'
-                                          : '설정한 시간대마다 반복 알림')
-                                      : '알림 미사용',
+                                  _getReminderSubtitle(),
                                   style: TextStyle(
                                     color: _reminderEnabled
                                         ? AppColors.primaryLight

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'core/constants/app_constants.dart';
 import 'core/services/ad_service.dart';
 import 'core/services/home_widget_service.dart';
@@ -11,6 +12,10 @@ import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   await initializeDateFormatting('ko', null);
   await HomeWidgetService.initialize();
   await NotificationService.initialize();

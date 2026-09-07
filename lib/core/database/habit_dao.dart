@@ -284,11 +284,40 @@ class HabitDao {
         referenceDate: targetDate,
       );
 
+      // 주 N회 습관인 경우 이번 주(월~일) 달성 횟수 집계
+      int weeklyCompletions = 0;
+      bool isWeeklyCompleted = false;
+      bool finalIsScheduled = isScheduled;
+
+      if (habit.repeatType == RepeatType.weeklyCount) {
+        final monday = targetDate.subtract(Duration(days: targetDate.weekday - 1));
+        final mondayNorm = DateTime(monday.year, monday.month, monday.day);
+        final sundayNorm = mondayNorm.add(const Duration(days: 6));
+
+        for (final dStr in completedDates) {
+          final d = DateUtil.parseDate(dStr);
+          final dNorm = DateTime(d.year, d.month, d.day);
+          if (!dNorm.isBefore(mondayNorm) && !dNorm.isAfter(sundayNorm)) {
+            weeklyCompletions++;
+          }
+        }
+
+        final targetWeekly = habit.repeatCount ?? 1;
+        isWeeklyCompleted = weeklyCompletions >= targetWeekly;
+
+        // 이번 주 목표 횟수를 이미 채웠고, 오늘 한 것이 아니라면 오늘 할 일이 없는 상태
+        if (isWeeklyCompleted && !isCompleted) {
+          finalIsScheduled = false;
+        }
+      }
+
       results.add(HabitWithTodayStatus(
         habit: habit,
         todayCount: todayCount,
         isCompletedToday: isCompleted,
-        isScheduledToday: isScheduled,
+        isScheduledToday: finalIsScheduled,
+        isWeeklyCompleted: isWeeklyCompleted,
+        weeklyCompletedCount: weeklyCompletions,
         currentStreak: streakResult.currentStreak,
         bestStreak: streakResult.bestStreak,
         totalCompletedCount: streakResult.totalCount,

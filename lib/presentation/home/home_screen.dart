@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/ad_service.dart';
 import '../../core/utils/date_util.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -83,6 +84,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _currentTabIndex = result;
       });
       context.read<HabitProvider>().loadHabits();
+    }
+  }
+
+  /// 습관 실천 체크/증가 처리 및 올클리어(100% 달성) 시 전면 광고 스케줄링
+  Future<void> _handleHabitAction(Future<void> Function() action) async {
+    final habitProvider = context.read<HabitProvider>();
+    final wasAllCompleted = habitProvider.isAllCompleted;
+
+    await action();
+
+    if (!mounted) return;
+    final isNowAllCompleted = habitProvider.isAllCompleted;
+
+    // 오늘 실천할 습관이 최소 2개 이상이고, 이번 실천으로 100% 올클리어를 달성한 순간!
+    // (습관이 1개뿐인 유저가 첫 체크하자마자 광고가 뜨는 이탈 경험 방지)
+    if (!wasAllCompleted && isNowAllCompleted && habitProvider.totalCount >= 2) {
+      // 100% 달성 축하 화면과 인터랙션을 충분히 누린 후(1.2초 뒤)에 가장 자연스럽게 노출
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted) {
+          AdService.showAllClearInterstitialAd();
+        }
+      });
     }
   }
 
@@ -426,14 +449,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     habitStatus: habitStatus,
                                     onToggle: () {
                                       if (habitStatus.habit.id != null) {
-                                        habitProvider
-                                            .toggleHabit(habitStatus.habit.id!);
+                                        _handleHabitAction(() => habitProvider
+                                            .toggleHabit(habitStatus.habit.id!));
                                       }
                                     },
                                     onIncrement: () {
                                       if (habitStatus.habit.id != null) {
-                                        habitProvider.incrementHabitCount(
-                                            habitStatus.habit.id!);
+                                        _handleHabitAction(() => habitProvider
+                                            .incrementHabitCount(habitStatus.habit.id!));
                                       }
                                     },
                                     onDecrement: () {
@@ -494,14 +517,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     habitStatus: habitStatus,
                                     onToggle: () {
                                       if (habitStatus.habit.id != null) {
-                                        habitProvider
-                                            .toggleHabit(habitStatus.habit.id!);
+                                        _handleHabitAction(() => habitProvider
+                                            .toggleHabit(habitStatus.habit.id!));
                                       }
                                     },
                                     onIncrement: () {
                                       if (habitStatus.habit.id != null) {
-                                        habitProvider.incrementHabitCount(
-                                            habitStatus.habit.id!);
+                                        _handleHabitAction(() => habitProvider
+                                            .incrementHabitCount(habitStatus.habit.id!));
                                       }
                                     },
                                     onDecrement: () {

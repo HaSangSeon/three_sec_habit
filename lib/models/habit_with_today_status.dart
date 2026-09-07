@@ -6,6 +6,8 @@ class HabitWithTodayStatus {
   final int todayCount;
   final bool isCompletedToday;
   final bool isScheduledToday; // 오늘 예정된 요일인지 여부
+  final bool isWeeklyCompleted; // 주 N회 습관의 이번 주 목표 달성 여부
+  final int weeklyCompletedCount; // 이번 주(월~일) 달성 횟수
   final int currentStreak;
   final int bestStreak;
   final int totalCompletedCount;
@@ -16,6 +18,8 @@ class HabitWithTodayStatus {
     this.todayCount = 0,
     required this.isCompletedToday,
     this.isScheduledToday = true,
+    this.isWeeklyCompleted = false,
+    this.weeklyCompletedCount = 0,
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.totalCompletedCount = 0,
@@ -37,6 +41,8 @@ class HabitWithTodayStatus {
     int? todayCount,
     bool? isCompletedToday,
     bool? isScheduledToday,
+    bool? isWeeklyCompleted,
+    int? weeklyCompletedCount,
     int? currentStreak,
     int? bestStreak,
     int? totalCompletedCount,
@@ -47,6 +53,8 @@ class HabitWithTodayStatus {
       todayCount: todayCount ?? this.todayCount,
       isCompletedToday: isCompletedToday ?? this.isCompletedToday,
       isScheduledToday: isScheduledToday ?? this.isScheduledToday,
+      isWeeklyCompleted: isWeeklyCompleted ?? this.isWeeklyCompleted,
+      weeklyCompletedCount: weeklyCompletedCount ?? this.weeklyCompletedCount,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
       totalCompletedCount: totalCompletedCount ?? this.totalCompletedCount,

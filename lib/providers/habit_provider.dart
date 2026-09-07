@@ -101,10 +101,9 @@ class HabitProvider extends ChangeNotifier {
       );
       final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
       if (isToday) {
-        await NotificationService.scheduleHabitReminder(
-          target.habit,
-          isCompletedToday: nextState,
-        );
+        _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
+        notifyListeners();
+        await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
       }
     } catch (e) {
@@ -151,10 +150,9 @@ class HabitProvider extends ChangeNotifier {
       );
       final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
       if (isToday) {
-        await NotificationService.scheduleHabitReminder(
-          target.habit,
-          isCompletedToday: isNowCompleted,
-        );
+        _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
+        notifyListeners();
+        await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
       }
     } catch (e) {
@@ -199,10 +197,9 @@ class HabitProvider extends ChangeNotifier {
       );
       final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
       if (isToday) {
-        await NotificationService.scheduleHabitReminder(
-          target.habit,
-          isCompletedToday: isNowCompleted,
-        );
+        _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
+        notifyListeners();
+        await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
       }
     } catch (e) {
@@ -250,10 +247,9 @@ class HabitProvider extends ChangeNotifier {
       );
       final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
       if (isToday) {
-        await NotificationService.scheduleHabitReminder(
-          target.habit,
-          isCompletedToday: isNowCompleted,
-        );
+        _habits = await _habitDao.getHabitsWithStatusForDate(_selectedDate);
+        notifyListeners();
+        await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
       }
     } catch (e) {

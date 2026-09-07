@@ -23,6 +23,7 @@ class AppConstants {
   // AdMob 실서비스 광고 ID
   static const String admobAppId = 'ca-app-pub-3702899361747571~1804729736';
   static const String realBannerAdId = 'ca-app-pub-3702899361747571/9523437656';
+  static const String realInterstitialAdId = 'ca-app-pub-3702899361747571/3183870959';
 
   // AdMob 테스트 광고 ID (Google 공식 테스트 ID - 디버그용)
   // 안드로이드 배너 테스트 ID

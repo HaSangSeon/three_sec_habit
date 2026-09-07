@@ -155,6 +155,7 @@ class NotificationService {
         await scheduleHabitReminder(
           item.habit,
           isCompletedToday: item.isCompletedToday,
+          isWeeklyCompleted: item.isWeeklyCompleted,
         );
       } else if (item.habit.id != null) {
         await cancelHabitReminder(item.habit.id!);
@@ -164,10 +165,12 @@ class NotificationService {
   }
 
   /// 개별 습관 알림 스마트 스케줄링 등록 / 갱신
-  /// [isCompletedToday]가 true이면 오늘의 알림을 스킵하고 내일부터 울리도록 스마트 예약합니다.
+  /// - [isCompletedToday]가 true이면 오늘의 알림을 스킵하고 내일부터 울리도록 스마트 예약
+  /// - [isWeeklyCompleted]가 true이면 (주 N회 습관의 이번 주 목표를 다 채운 경우) 이번 주 남은 요일 알림을 스킵하고 다음 주 월요일부터 예약
   static Future<void> scheduleHabitReminder(
     Habit habit, {
     bool isCompletedToday = false,
+    bool isWeeklyCompleted = false,
   }) async {
     if (habit.id == null) return;
     await cancelHabitReminder(habit.id!);
@@ -198,6 +201,7 @@ class NotificationService {
       );
 
       final now = tz.TZDateTime.now(tz.local);
+      final isWeeklyDone = habit.repeatType == RepeatType.weeklyCount && isWeeklyCompleted;
 
       if (habit.reminderType == ReminderType.fixed &&
           habit.reminderTime != null) {
@@ -218,7 +222,11 @@ class NotificationService {
             var scheduledDate =
                 tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
 
-            if (isCompletedToday || scheduledDate.isBefore(now)) {
+            if (isWeeklyDone) {
+              // 주 N회 목표를 이번 주에 이미 다 달성했으면 다음 주 월요일까지 알림 스킵
+              final daysUntilNextMonday = 8 - now.weekday;
+              scheduledDate = scheduledDate.add(Duration(days: daysUntilNextMonday));
+            } else if (isCompletedToday || scheduledDate.isBefore(now)) {
               scheduledDate = scheduledDate.add(const Duration(days: 1));
             }
 
@@ -298,7 +306,7 @@ class NotificationService {
             int currentSlotMin = startTotalMin;
             int slotIdx = 0;
 
-            while (currentSlotMin <= endTotalMin && slotIdx < 50) {
+            while (currentSlotMin <= endTotalMin && slotIdx < 25) {
               final slotHour = currentSlotMin ~/ 60;
               final slotMin = currentSlotMin % 60;
 
@@ -311,7 +319,11 @@ class NotificationService {
                 slotMin,
               );
 
-              if (isCompletedToday || scheduledDate.isBefore(now)) {
+              if (isWeeklyDone) {
+                // 주 N회 목표를 이번 주에 이미 다 달성했으면 다음 주 월요일까지 알림 스킵
+                final daysUntilNextMonday = 8 - now.weekday;
+                scheduledDate = scheduledDate.add(Duration(days: daysUntilNextMonday));
+              } else if (isCompletedToday || scheduledDate.isBefore(now)) {
                 scheduledDate = scheduledDate.add(const Duration(days: 1));
               }
 
@@ -331,7 +343,7 @@ class NotificationService {
               currentSlotMin += intervalMinutes;
             }
           } else if (habit.repeatDays.isNotEmpty) {
-            // 요일별 간격 알림: 각 요일별 최대 50개 슬롯 (day * 50 + slotIdx)
+            // 요일별 간격 알림: 각 요일별 최대 25개 슬롯 압축 (day * 25 + slotIdx, 총 200개 미만)
             for (final day in habit.repeatDays) {
               int daysUntil = (day - now.weekday) % 7;
               if (daysUntil < 0) daysUntil += 7;
@@ -339,7 +351,7 @@ class NotificationService {
               int currentSlotMin = startTotalMin;
               int slotIdx = 0;
 
-              while (currentSlotMin <= endTotalMin && slotIdx < 50) {
+              while (currentSlotMin <= endTotalMin && slotIdx < 25) {
                 final slotHour = currentSlotMin ~/ 60;
                 final slotMin = currentSlotMin % 60;
 
@@ -356,7 +368,7 @@ class NotificationService {
                   scheduledDate = scheduledDate.add(const Duration(days: 7));
                 }
 
-                final notifId = _generateNotificationId(habit.id!, day * 50 + slotIdx);
+                final notifId = _generateNotificationId(habit.id!, day * 25 + slotIdx);
                 await _notificationsPlugin.zonedSchedule(
                   id: notifId,
                   title: title,
@@ -380,10 +392,10 @@ class NotificationService {
     }
   }
 
-  /// 습관 알림 취소 (최대 500개 서브 ID 슬롯 일괄 취소)
+  /// 습관 알림 취소 (최대 200개 서브 ID 슬롯 일괄 취소, 반응속도 최적화)
   static Future<void> cancelHabitReminder(int habitId) async {
     try {
-      for (int subId = 0; subId < 500; subId++) {
+      for (int subId = 0; subId < 200; subId++) {
         final notifId = _generateNotificationId(habitId, subId);
         await _notificationsPlugin.cancel(id: notifId);
       }
