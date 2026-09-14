@@ -392,13 +392,15 @@ class NotificationService {
     }
   }
 
-  /// 습관 알림 취소 (최대 200개 서브 ID 슬롯 일괄 취소, 반응속도 최적화)
+  /// 습관 알림 취소 (최대 200개 서브 ID 슬롯 일괄 취소, Future.wait로 병렬 최적화)
   static Future<void> cancelHabitReminder(int habitId) async {
     try {
+      final futures = <Future<void>>[];
       for (int subId = 0; subId < 200; subId++) {
         final notifId = _generateNotificationId(habitId, subId);
-        await _notificationsPlugin.cancel(id: notifId);
+        futures.add(_notificationsPlugin.cancel(id: notifId));
       }
+      await Future.wait(futures);
     } catch (e) {
       debugPrint('Error cancelling notification for habit $habitId: $e');
     }

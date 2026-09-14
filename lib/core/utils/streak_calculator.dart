@@ -209,18 +209,19 @@ class StreakCalculator {
     final targetCount = habit.repeatCount ?? 1;
 
     // 주(Week: 월요일 시작)별 완료 횟수 집계
-    final weekCompletions = <String, int>{}; // 'YYYY-Www' -> count
+    final weekCompletions = <DateTime, int>{}; // Monday DateTime -> count
     for (final dateStr in completedDates) {
       final date = DateUtil.parseDate(dateStr);
-      final weekKey = _getWeekKey(date);
-      weekCompletions[weekKey] = (weekCompletions[weekKey] ?? 0) + 1;
+      final rawMonday = _getMondayOfWeek(date);
+      final monday = DateTime(rawMonday.year, rawMonday.month, rawMonday.day);
+      weekCompletions[monday] = (weekCompletions[monday] ?? 0) + 1;
     }
 
-    final currentWeekKey = _getWeekKey(now);
-    final currentWeekCount = weekCompletions[currentWeekKey] ?? 0;
+    final rawCurrentMonday = _getMondayOfWeek(now);
+    DateTime currentWeekMonday = DateTime(rawCurrentMonday.year, rawCurrentMonday.month, rawCurrentMonday.day);
+    final currentWeekCount = weekCompletions[currentWeekMonday] ?? 0;
 
     int currentStreak = 0;
-    DateTime currentWeekMonday = _getMondayOfWeek(now);
 
     // 이번 주 목표 달성 시 이번 주 포함
     if (currentWeekCount >= targetCount) {
@@ -232,8 +233,7 @@ class StreakCalculator {
     }
 
     while (true) {
-      final weekKey = _getWeekKey(currentWeekMonday);
-      final count = weekCompletions[weekKey] ?? 0;
+      final count = weekCompletions[currentWeekMonday] ?? 0;
       if (count >= targetCount) {
         currentStreak++;
         currentWeekMonday = currentWeekMonday.subtract(const Duration(days: 7));
@@ -245,16 +245,32 @@ class StreakCalculator {
     // 최장 주간 스트릭
     int bestStreak = currentStreak;
     int tempStreak = 0;
-    // 주 키 정렬 후 연속 주인지 계산
-    final sortedWeeks = weekCompletions.keys.toList()..sort();
-    for (final w in sortedWeeks) {
-      if ((weekCompletions[w] ?? 0) >= targetCount) {
-        tempStreak++;
+    DateTime? prevMonday;
+
+    // 월요일 기준으로 정렬 후 연속 주(7일 간격)인지 계산
+    final sortedMondays = weekCompletions.keys.toList()..sort();
+    for (final m in sortedMondays) {
+      if ((weekCompletions[m] ?? 0) >= targetCount) {
+        if (prevMonday == null) {
+          tempStreak = 1;
+        } else {
+          final diff = m.difference(prevMonday).inDays;
+          // 정확히 7일 차이(연속 주)인 경우만 스트릭 증가
+          if (diff == 7) {
+            tempStreak++;
+          } else if (diff > 7) {
+            tempStreak = 1;
+          }
+        }
+
         if (tempStreak > bestStreak) {
           bestStreak = tempStreak;
         }
+        prevMonday = m;
       } else {
+        // 목표 횟수에 미달한 주가 있으면 스트릭 끊김
         tempStreak = 0;
+        prevMonday = null;
       }
     }
 

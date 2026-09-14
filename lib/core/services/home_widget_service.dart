@@ -41,12 +41,6 @@ Future<void> backgroundCallback(Uri? uri) async {
             count: nextCount,
             targetCount: habit.targetCount,
           );
-          if (habit.reminderEnabled) {
-            await NotificationService.scheduleHabitReminder(
-              habit,
-              isCompletedToday: nextCount >= habit.targetCount,
-            );
-          }
         } else if (habit != null) {
           final completedIds = await dao.getCompletedHabitIdsForDate(todayStr);
           final isCurrentlyCompleted = completedIds.contains(habitId);
@@ -56,17 +50,13 @@ Future<void> backgroundCallback(Uri? uri) async {
             date: todayStr,
             isCompleted: !isCurrentlyCompleted,
           );
-          if (habit.reminderEnabled) {
-            await NotificationService.scheduleHabitReminder(
-              habit,
-              isCompletedToday: !isCurrentlyCompleted,
-            );
-          }
         }
 
-        // 위젯 최신 데이터 재동기화
+        // 위젯 최신 데이터 재동기화 및 백그라운드 알림 스케줄 완벽 동기화 (주 N회 상태 포함)
         final habits = await dao.getHabitsWithStatusForDate(DateTime.now());
         await HomeWidgetService.updateWidgetData(habits);
+        await NotificationService.rescheduleAllHabits(habits);
+        
         debugPrint('⚡ [HomeWidget] Habit ID $habitId toggled successfully in background.');
       }
     }

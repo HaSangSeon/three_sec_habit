@@ -273,14 +273,19 @@ class HabitProvider extends ChangeNotifier {
     final targetDateStr = DateUtil.formatDate(_selectedDate);
     await _habitDao.updateHabit(habit, targetDate: targetDateStr);
 
-    // 오늘 해당 습관의 완료 상태를 확인하여 알림 스케줄링 시 스마트 스킵/유지 보장
-    final todayLog = await _habitDao.getHabitLogForDate(
-        habit.id ?? -1, DateUtil.today());
-    final isDoneToday = todayLog?.isCompleted ?? false;
-    await NotificationService.scheduleHabitReminder(
-      habit,
-      isCompletedToday: isDoneToday,
-    );
+    // 수정한 습관의 오늘 기준 최신 완료 상태(매일, 주N회 달성 여부 등)를 가져와 알림 스케줄링 완벽 동기화
+    final todayHabits = await _habitDao.getHabitsWithStatusForDate(DateTime.now());
+    try {
+      final targetToday = todayHabits.firstWhere((h) => h.habit.id == habit.id);
+      await NotificationService.scheduleHabitReminder(
+        targetToday.habit,
+        isCompletedToday: targetToday.isCompletedToday,
+        isWeeklyCompleted: targetToday.isWeeklyCompleted,
+      );
+    } catch (_) {
+      // 삭제되거나 조회 불가한 경우 대비
+      await NotificationService.scheduleHabitReminder(habit);
+    }
 
     await loadHabits();
   }
