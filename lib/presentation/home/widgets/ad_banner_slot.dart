@@ -74,30 +74,32 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
 
   @override
   Widget build(BuildContext context) {
+    final height = AdService.bannerHeight;
+
     if (_isAdLoaded && _bannerAd != null) {
       return Container(
         width: double.infinity,
-        height: _bannerAd!.size.height.toDouble(),
+        height: height,
         alignment: Alignment.center,
         color: context.bg,
         child: SizedBox(
           width: double.infinity,
-          height: _bannerAd!.size.height.toDouble(),
+          height: height,
           child: AdWidget(ad: _bannerAd!),
         ),
       );
     }
 
-    // 광고 로딩 중 또는 폴백 UI
+    // 광고 로딩 중 또는 폴백 UI (완벽한 CLS 방지: 로드 전후 높이를 일치시킴)
     return Container(
       width: double.infinity,
-      height: 52,
+      height: height,
       alignment: Alignment.center,
       color: context.bg,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Container(
         width: double.infinity,
-        height: 48,
+        height: (height - 4).clamp(44.0, 60.0),
         decoration: BoxDecoration(
           color: context.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(10),

@@ -80,6 +80,11 @@ class HabitWidgetProvider2x2 : HomeWidgetProvider() {
                     if (isDark) 0xFF94A3B8.toInt() else 0xFF64748B.toInt()
                 )
 
+                setTextColor(
+                    R.id.widget_2x2_app_title,
+                    if (isDark) 0xFFA78BFA.toInt() else 0xFF7C3AED.toInt()
+                )
+
                 setTextViewText(R.id.widget_2x2_quick_title, topHabitTitle)
                 setTextColor(
                     R.id.widget_2x2_quick_title,

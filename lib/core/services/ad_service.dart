@@ -9,6 +9,15 @@ class AdService {
 
   static bool _isInitialized = false;
   static String _lastInterstitialShownDate = '';
+  static double _cachedBannerHeight = 60.0;
+
+  /// 하단 배너 광고 슬롯의 고정 높이 (기기 및 오리엔테이션 기준 계산값 캐싱하여 레이아웃 시프트 방지)
+  static double get bannerHeight => _cachedBannerHeight;
+  static void setBannerHeight(double height) {
+    if (height > 0) {
+      _cachedBannerHeight = height;
+    }
+  }
 
   /// AdMob SDK 초기화
   static Future<void> initialize() async {
@@ -55,6 +64,8 @@ class AdService {
     if (!_isInitialized) return null;
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
     if (size == null) return null;
+
+    setBannerHeight(size.height.toDouble());
 
     return BannerAd(
       adUnitId: bannerAdUnitId,

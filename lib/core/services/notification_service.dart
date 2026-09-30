@@ -294,21 +294,74 @@ class NotificationService {
         final intervalMinutes = (habit.reminderIntervalMinutes ?? 60).clamp(15, 720);
 
         final startTotalMin = startHour * 60 + startMinute;
-        final endTotalMin = endHour * 60 + endMinute;
+        int endTotalMin = endHour * 60 + endMinute;
 
-        if (endTotalMin > startTotalMin) {
-          final isDaily = habit.repeatType == RepeatType.daily ||
-              habit.repeatType == RepeatType.weeklyCount ||
-              habit.repeatDays.length == 7;
+        // 야간 알림 (예: 22:00 ~ 02:00) 대응을 위해 다음날로 간주 (+24시간)
+        if (endTotalMin <= startTotalMin) {
+          endTotalMin += 24 * 60;
+        }
 
-          if (isDaily) {
-            // 매일 간격 알림 (최대 50개 슬롯 지원으로 30분 간격도 저녁 21시까지 완벽 수용)
+        final isDaily = habit.repeatType == RepeatType.daily ||
+            habit.repeatType == RepeatType.weeklyCount ||
+            habit.repeatDays.length == 7;
+
+        if (isDaily) {
+          // 매일 간격 알림 (최대 70개 슬롯 지원)
+          int currentSlotMin = startTotalMin;
+          int slotIdx = 0;
+
+          while (currentSlotMin <= endTotalMin && slotIdx < 70) {
+            final rawHour = currentSlotMin ~/ 60;
+            final slotHour = rawHour % 24;
+            final slotMin = currentSlotMin % 60;
+            final extraDays = rawHour >= 24 ? 1 : 0;
+
+            var scheduledDate = tz.TZDateTime(
+              tz.local,
+              now.year,
+              now.month,
+              now.day,
+              slotHour,
+              slotMin,
+            ).add(Duration(days: extraDays));
+
+            if (isWeeklyDone) {
+              // 주 N회 목표를 이번 주에 이미 다 달성했으면 다음 주 월요일까지 알림 스킵
+              final daysUntilNextMonday = 8 - now.weekday;
+              scheduledDate = scheduledDate.add(Duration(days: daysUntilNextMonday));
+            } else if (isCompletedToday || scheduledDate.isBefore(now)) {
+              scheduledDate = scheduledDate.add(const Duration(days: 1));
+            }
+
+            final notifId = _generateNotificationId(habit.id!, slotIdx);
+            await _notificationsPlugin.zonedSchedule(
+              id: notifId,
+              title: title,
+              body: body,
+              scheduledDate: scheduledDate,
+              notificationDetails: notificationDetails,
+              androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+              matchDateTimeComponents: DateTimeComponents.time,
+              payload: 'habit_${habit.id}_slot_$slotIdx',
+            );
+
+            slotIdx++;
+            currentSlotMin += intervalMinutes;
+          }
+        } else if (habit.repeatDays.isNotEmpty) {
+          // 요일별 간격 알림: 각 요일별 최대 70개 슬롯 압축 (day * 100 + slotIdx, 총 800개 미만)
+          for (final day in habit.repeatDays) {
+            int daysUntil = (day - now.weekday) % 7;
+            if (daysUntil < 0) daysUntil += 7;
+
             int currentSlotMin = startTotalMin;
             int slotIdx = 0;
 
-            while (currentSlotMin <= endTotalMin && slotIdx < 25) {
-              final slotHour = currentSlotMin ~/ 60;
+            while (currentSlotMin <= endTotalMin && slotIdx < 70) {
+              final rawHour = currentSlotMin ~/ 60;
+              final slotHour = rawHour % 24;
               final slotMin = currentSlotMin % 60;
+              final extraDays = rawHour >= 24 ? 1 : 0;
 
               var scheduledDate = tz.TZDateTime(
                 tz.local,
@@ -317,17 +370,13 @@ class NotificationService {
                 now.day,
                 slotHour,
                 slotMin,
-              );
+              ).add(Duration(days: daysUntil + extraDays));
 
-              if (isWeeklyDone) {
-                // 주 N회 목표를 이번 주에 이미 다 달성했으면 다음 주 월요일까지 알림 스킵
-                final daysUntilNextMonday = 8 - now.weekday;
-                scheduledDate = scheduledDate.add(Duration(days: daysUntilNextMonday));
-              } else if (isCompletedToday || scheduledDate.isBefore(now)) {
-                scheduledDate = scheduledDate.add(const Duration(days: 1));
+              if (daysUntil == 0 && (isCompletedToday || scheduledDate.isBefore(now))) {
+                scheduledDate = scheduledDate.add(const Duration(days: 7));
               }
 
-              final notifId = _generateNotificationId(habit.id!, slotIdx);
+              final notifId = _generateNotificationId(habit.id!, day * 100 + slotIdx);
               await _notificationsPlugin.zonedSchedule(
                 id: notifId,
                 title: title,
@@ -335,54 +384,12 @@ class NotificationService {
                 scheduledDate: scheduledDate,
                 notificationDetails: notificationDetails,
                 androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-                matchDateTimeComponents: DateTimeComponents.time,
-                payload: 'habit_${habit.id}_slot_$slotIdx',
+                matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+                payload: 'habit_${habit.id}_day_${day}_slot_$slotIdx',
               );
 
               slotIdx++;
               currentSlotMin += intervalMinutes;
-            }
-          } else if (habit.repeatDays.isNotEmpty) {
-            // 요일별 간격 알림: 각 요일별 최대 25개 슬롯 압축 (day * 25 + slotIdx, 총 200개 미만)
-            for (final day in habit.repeatDays) {
-              int daysUntil = (day - now.weekday) % 7;
-              if (daysUntil < 0) daysUntil += 7;
-
-              int currentSlotMin = startTotalMin;
-              int slotIdx = 0;
-
-              while (currentSlotMin <= endTotalMin && slotIdx < 25) {
-                final slotHour = currentSlotMin ~/ 60;
-                final slotMin = currentSlotMin % 60;
-
-                var scheduledDate = tz.TZDateTime(
-                  tz.local,
-                  now.year,
-                  now.month,
-                  now.day,
-                  slotHour,
-                  slotMin,
-                ).add(Duration(days: daysUntil));
-
-                if (daysUntil == 0 && (isCompletedToday || scheduledDate.isBefore(now))) {
-                  scheduledDate = scheduledDate.add(const Duration(days: 7));
-                }
-
-                final notifId = _generateNotificationId(habit.id!, day * 25 + slotIdx);
-                await _notificationsPlugin.zonedSchedule(
-                  id: notifId,
-                  title: title,
-                  body: body,
-                  scheduledDate: scheduledDate,
-                  notificationDetails: notificationDetails,
-                  androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-                  matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-                  payload: 'habit_${habit.id}_day_${day}_slot_$slotIdx',
-                );
-
-                slotIdx++;
-                currentSlotMin += intervalMinutes;
-              }
             }
           }
         }
@@ -392,15 +399,19 @@ class NotificationService {
     }
   }
 
-  /// 습관 알림 취소 (최대 200개 서브 ID 슬롯 일괄 취소, Future.wait로 병렬 최적화)
+  /// 습관 알림 취소 (최대 800개 서브 ID 슬롯 일괄 취소, Future.wait로 청크 단위 병렬 최적화)
   static Future<void> cancelHabitReminder(int habitId) async {
     try {
-      final futures = <Future<void>>[];
-      for (int subId = 0; subId < 200; subId++) {
-        final notifId = _generateNotificationId(habitId, subId);
-        futures.add(_notificationsPlugin.cancel(id: notifId));
+      for (int chunkStart = 0; chunkStart < 800; chunkStart += 50) {
+        final futures = <Future<void>>[];
+        for (int i = 0; i < 50; i++) {
+          final subId = chunkStart + i;
+          if (subId >= 800) break;
+          final notifId = _generateNotificationId(habitId, subId);
+          futures.add(_notificationsPlugin.cancel(id: notifId));
+        }
+        await Future.wait(futures);
       }
-      await Future.wait(futures);
     } catch (e) {
       debugPrint('Error cancelling notification for habit $habitId: $e');
     }

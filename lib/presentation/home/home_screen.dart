@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/utils/date_util.dart';
+import '../../models/habit.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../common/help_guide_dialog.dart';
@@ -50,12 +51,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  void _onAddHabitPressed() async {
-    final result = await Navigator.of(context).push<dynamic>(
-      MaterialPageRoute(
-        builder: (_) => HabitEditScreen(initialTabIndex: _currentTabIndex),
+  Future<dynamic> _navigateToHabitEdit({Habit? habit}) {
+    return Navigator.of(context).push<dynamic>(
+      PageRouteBuilder<dynamic>(
+        pageBuilder: (context, animation, secondaryAnimation) => HabitEditScreen(
+          habit: habit,
+          initialTabIndex: _currentTabIndex,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOut,
+            ),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 200),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
       ),
     );
+  }
+
+  void _onAddHabitPressed() async {
+    final result = await _navigateToHabitEdit();
     if (!mounted) return;
     if (result == true) {
       context.read<HabitProvider>().loadHabits();
@@ -68,14 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _onEditHabit(dynamic habit) async {
-    final result = await Navigator.of(context).push<dynamic>(
-      MaterialPageRoute(
-        builder: (_) => HabitEditScreen(
-          habit: habit,
-          initialTabIndex: _currentTabIndex,
-        ),
-      ),
-    );
+    final result = await _navigateToHabitEdit(habit: habit as Habit?);
     if (!mounted) return;
     if (result == true) {
       context.read<HabitProvider>().loadHabits();

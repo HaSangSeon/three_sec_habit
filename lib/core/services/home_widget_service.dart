@@ -146,7 +146,7 @@ class HomeWidgetService {
       await HomeWidget.setAppGroupId(AppConstants.appGroupId);
       final scheduledHabits =
           habits.where((h) => h.isScheduledToday).toList();
-      final activeList = scheduledHabits.isNotEmpty ? scheduledHabits : habits;
+      final activeList = scheduledHabits;
 
       final todayStr = DateUtil.formatForDisplay(DateTime.now());
       final total = activeList.length;
@@ -201,26 +201,6 @@ class HomeWidgetService {
 
       await HomeWidget.saveWidgetData<String>(
           'widget_habits_json', jsonEncode(habitsJsonList));
-
-      // 4x2 위젯 슬롯 동기화 (최대 4개)
-      for (int i = 0; i < 4; i++) {
-        if (i < displayList.length) {
-          final h = displayList[i];
-          await HomeWidget.saveWidgetData<int>(
-              'widget_habit_id_$i', h.habit.id ?? -1);
-          await HomeWidget.saveWidgetData<String>(
-              'widget_habit_title_$i', _formatHabitTitle(h));
-          await HomeWidget.saveWidgetData<String>(
-              'widget_habit_btn_text_$i', _formatHabitBtnText(h));
-          await HomeWidget.saveWidgetData<bool>(
-              'widget_habit_done_$i', h.isCompletedToday);
-        } else {
-          await HomeWidget.saveWidgetData<int>('widget_habit_id_$i', -1);
-          await HomeWidget.saveWidgetData<String>('widget_habit_title_$i', '');
-          await HomeWidget.saveWidgetData<String>('widget_habit_btn_text_$i', '○');
-          await HomeWidget.saveWidgetData<bool>('widget_habit_done_$i', false);
-        }
-      }
 
       // 4. 네이티브 위젯 화면 갱신 트리거
       await HomeWidget.updateWidget(
