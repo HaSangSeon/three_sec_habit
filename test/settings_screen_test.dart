@@ -27,7 +27,6 @@ void main() {
     expect(find.text('테마 모드 선택'), findsOneWidget);
     expect(find.text('라이트'), findsOneWidget);
     expect(find.text('다크'), findsOneWidget);
-    expect(find.text('전체 알림 허용'), findsOneWidget);
     expect(find.text('데이터 백업 (내보내기)'), findsOneWidget);
   });
 

@@ -111,6 +111,7 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
         child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -128,12 +129,16 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                '3초 습관과 함께하는 생산적인 하루 ⚡️',
-                style: TextStyle(
-                  color: context.textMuted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  '3초 습관과 함께하는 생산적인 하루 ⚡️',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.textMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

@@ -297,7 +297,7 @@ class StreakCalculator {
   }
 
   /// 연도-주차 키 (예: '2026-W34')
-  static String _getWeekKey(DateTime date) {
+  static String getWeekKey(DateTime date) {
     final monday = _getMondayOfWeek(date);
     final dayOfYear = monday.difference(DateTime(monday.year, 1, 1)).inDays;
     final weekNumber = (dayOfYear / 7).floor() + 1;

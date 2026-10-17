@@ -57,34 +57,46 @@ class GrassHeatmapCalendar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.grid_view_rounded,
-                    color: AppColors.success,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    DateUtil.formatMonth(firstDayOfMonth),
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.grid_view_rounded,
+                      color: AppColors.success,
+                      size: 18,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        DateUtil.formatMonth(firstDayOfMonth),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: Icon(Icons.chevron_left_rounded, color: context.textSecondary),
                     visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     onPressed: onPreviousMonth,
                   ),
                   IconButton(
                     icon: Icon(Icons.chevron_right_rounded, color: context.textSecondary),
                     visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     onPressed: onNextMonth,
                   ),
                 ],
@@ -95,10 +107,8 @@ class GrassHeatmapCalendar extends StatelessWidget {
 
           // 2. 요일 라벨 (월 화 수 목 금 토 일)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: ['월', '화', '수', '목', '금', '토', '일'].map((day) {
-              return SizedBox(
-                width: 34,
+              return Expanded(
                 child: Center(
                   child: Text(
                     day,
@@ -191,29 +201,35 @@ class GrassHeatmapCalendar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '날짜 터치 시 완료 내역 확인',
-                style: TextStyle(
-                  color: context.textMuted.withValues(alpha: 0.7),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w400,
+              Expanded(
+                child: Text(
+                  '날짜 터치 시 완료 내역 확인',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: context.textMuted.withValues(alpha: 0.7),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
+              const SizedBox(width: 6),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Less',
                     style: TextStyle(color: context.textMuted, fontSize: 10),
                   ),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                   _buildLegendCell(context.bg, context),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2.5),
                   _buildLegendCell(context.isDarkMode ? const Color(0xFF065F46) : const Color(0xFFA7F3D0), context),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2.5),
                   _buildLegendCell(context.isDarkMode ? const Color(0xFF059669) : const Color(0xFF34D399), context),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2.5),
                   _buildLegendCell(const Color(0xFF10B981), context),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                   Text(
                     'More',
                     style: TextStyle(color: context.textMuted, fontSize: 10),

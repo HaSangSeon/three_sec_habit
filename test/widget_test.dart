@@ -15,8 +15,8 @@ void main() {
       expect(themeProvider.isDarkMode, isFalse);
     });
 
-    test('2. AppIcons 15개 아이콘 목록 및 기본 아이콘 매핑 검증', () {
-      expect(AppIcons.icons.length, 15);
+    test('2. AppIcons 41개 아이콘 목록 및 기본 아이콘 매핑 검증', () {
+      expect(AppIcons.icons.length, 41);
       expect(AppIcons.getIcon('water_drop'), isNotNull);
       expect(AppIcons.getIcon('unknown_icon_name'), isNotNull);
     });

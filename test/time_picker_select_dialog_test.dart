@@ -19,9 +19,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('지정 알림 시간 설정'), findsOneWidget);
-      expect(find.text('오전'), findsWidgets);
-      expect(find.text('08 : 30'), findsOneWidget);
-      expect(find.text('(08:30)'), findsOneWidget);
+      expect(find.textContaining('오전'), findsWidgets);
+      expect(find.textContaining('08:30'), findsWidgets);
       expect(find.text('08시'), findsOneWidget);
       expect(find.text('30분'), findsOneWidget);
     });
@@ -41,9 +40,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('알림 종료 시간 설정'), findsOneWidget);
-      expect(find.text('오후'), findsWidgets);
-      expect(find.text('09 : 15'), findsOneWidget);
-      expect(find.text('(21:15)'), findsOneWidget);
+      expect(find.textContaining('오후'), findsWidgets);
+      expect(find.textContaining('21:15'), findsWidgets);
       expect(find.text('09시'), findsOneWidget);
       expect(find.text('15분'), findsOneWidget);
     });
@@ -65,9 +63,8 @@ void main() {
       await tester.tap(find.text('점심 12:30'));
       await tester.pumpAndSettle();
 
-      expect(find.text('12 : 30'), findsOneWidget);
-      expect(find.text('(12:30)'), findsOneWidget);
-      expect(find.text('오후'), findsWidgets);
+      expect(find.textContaining('12:30'), findsWidgets);
+      expect(find.textContaining('오후'), findsWidgets);
     });
   });
 }

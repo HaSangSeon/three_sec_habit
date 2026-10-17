@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icons.dart';
-import '../../core/services/notification_service.dart';
-import '../../core/utils/date_util.dart';
-import '../../models/habit.dart';
-import '../../providers/habit_provider.dart';
-import '../../providers/theme_provider.dart';
-import '../common/time_picker_select_dialog.dart';
-import '../home/widgets/ad_banner_slot.dart';
+import 'package:three_sec_habit/core/constants/app_colors.dart';
+import 'package:three_sec_habit/core/constants/app_icons.dart';
+import 'package:three_sec_habit/core/utils/date_util.dart';
+import 'package:three_sec_habit/models/habit.dart';
+import 'package:three_sec_habit/presentation/common/time_picker_select_dialog.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_delete_dialog.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_icon_color_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_reminder_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_repeat_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_target_count_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_title_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/senior_habit_presets_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/target_count_help_dialog.dart';
+import 'package:three_sec_habit/presentation/home/widgets/ad_banner_slot.dart';
+import 'package:three_sec_habit/providers/habit_provider.dart';
+import 'package:three_sec_habit/providers/theme_provider.dart';
 
-/// 습관 추가 및 편집 화면 (프리미엄 UI, 정밀한 정렬 및 디테일)
+/// 시니어 친화적 초프리미엄 습관 추가 및 편집 화면
+/// - 어르신을 위한 1-터치 빠른 추천 습관 (복약, 산책, 스트레칭 등)
+/// - 크고 시원시원한 디지털 시계 카드 및 원터치 알림 프리셋
+/// - 부드러운 햅틱 반응과 넉넉한 터치 타겟 (44px 이상)
 class HabitEditScreen extends StatefulWidget {
   final Habit? habit; // null이면 신규 추가, 있으면 수정 모드
-  final int initialTabIndex;
+  final int initialTabIndex; // 하단 탭 인덱스 동기화 (기본 2: 습관 등록)
 
   const HabitEditScreen({
     super.key,
     this.habit,
-    this.initialTabIndex = 0,
+    this.initialTabIndex = 2,
   });
 
   @override
@@ -28,12 +38,13 @@ class HabitEditScreen extends StatefulWidget {
 
 class _HabitEditScreenState extends State<HabitEditScreen> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _titleController;
   late TextEditingController _unitController;
+  late String _unit;
 
   late HabitType _habitType;
   late int _targetCount;
-  late String _unit;
 
   late String _selectedIconKey;
   late int _selectedColorValue;
@@ -43,14 +54,24 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
 
   late bool _reminderEnabled;
   late ReminderType _reminderType;
-  TimeOfDay? _reminderTime;
+  late List<TimeOfDay> _reminderTimes;
+  late int _reminderIntervalMinutes;
   TimeOfDay? _reminderStartTime;
   TimeOfDay? _reminderEndTime;
-  late int _reminderIntervalMinutes;
+
+  late int _currentTabIndex;
 
   bool get _isEditing => widget.habit != null;
 
-  static const List<String> _suggestedUnits = ['잔', '회', '번', '세트', '분', '쪽', 'km'];
+  static const List<String> _suggestedUnits = [
+    '잔',
+    '회',
+    '번',
+    '세트',
+    '분',
+    '쪽',
+    'km'
+  ];
   static const List<int> _suggestedIntervals = [30, 60, 120, 180];
 
   @override
@@ -62,7 +83,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     _unitController = TextEditingController(text: _unit);
 
     _habitType = h?.habitType ?? HabitType.check;
-    _targetCount = h?.targetCount ?? (h?.habitType == HabitType.count ? 8 : 1);
+    _targetCount =
+        h?.targetCount ?? (h?.habitType == HabitType.count ? 8 : 1);
 
     _selectedIconKey = h?.iconName ?? 'water_drop';
     _selectedColorValue = h?.colorValue ?? 0xFF8B5CF6;
@@ -72,19 +94,30 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         : [1, 2, 3, 4, 5, 6, 7];
     _repeatCount = h?.repeatCount ?? 3;
 
-    _reminderEnabled = h?.reminderEnabled ?? false;
+    _reminderEnabled = h?.reminderEnabled ?? true;
     _reminderType = h?.reminderType ?? ReminderType.fixed;
     _reminderIntervalMinutes = h?.reminderIntervalMinutes ?? 60;
 
-    if (h?.reminderTime != null && h!.reminderTime!.contains(':')) {
+    if (h != null && h.reminderTimes.isNotEmpty) {
+      _reminderTimes = h.reminderTimes.map((tStr) {
+        final parts = tStr.split(':');
+        return TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 8,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }).toList();
+    } else if (h?.reminderTime != null && h!.reminderTime!.contains(':')) {
       final parts = h.reminderTime!.split(':');
-      _reminderTime = TimeOfDay(
-        hour: int.tryParse(parts[0]) ?? 8,
-        minute: int.tryParse(parts[1]) ?? 0,
-      );
+      _reminderTimes = [
+        TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 8,
+          minute: int.tryParse(parts[1]) ?? 0,
+        ),
+      ];
     } else {
-      _reminderTime = const TimeOfDay(hour: 8, minute: 0);
+      _reminderTimes = [const TimeOfDay(hour: 8, minute: 30)];
     }
+    _sortReminderTimes();
 
     if (h?.reminderStartTime != null && h!.reminderStartTime!.contains(':')) {
       final parts = h.reminderStartTime!.split(':');
@@ -105,6 +138,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     } else {
       _reminderEndTime = const TimeOfDay(hour: 21, minute: 0);
     }
+
+    _currentTabIndex = widget.initialTabIndex;
   }
 
   @override
@@ -114,45 +149,180 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     super.dispose();
   }
 
+  void _sortReminderTimes() {
+    _reminderTimes.sort((a, b) {
+      final minA = a.hour * 60 + a.minute;
+      final minB = b.hour * 60 + b.minute;
+      return minA.compareTo(minB);
+    });
+  }
+
   String _getReminderSubtitle() {
-    if (!_reminderEnabled) return '알림 미사용';
+    if (!_reminderEnabled) return '알림 미사용 (필요할 때 켜세요)';
 
     final periodStr = switch (_repeatType) {
       RepeatType.daily => '매일',
-      RepeatType.weeklyDays => _repeatDays.length == 7 ? '매일' : '선택한 요일마다',
+      RepeatType.weeklyDays =>
+        _repeatDays.length == 7 ? '매일 (월~일)' : '선택한 요일마다',
       RepeatType.weeklyCount => '주 $_repeatCount회 달성 전까지',
     };
 
     if (_reminderType == ReminderType.fixed) {
-      if (_reminderTime != null) {
-        final isPm = _reminderTime!.hour >= 12;
-        final h = _reminderTime!.hour == 0
-            ? 12
-            : (_reminderTime!.hour > 12
-                ? _reminderTime!.hour - 12
-                : _reminderTime!.hour);
-        final mStr =
-            _reminderTime!.minute > 0 ? '${_reminderTime!.minute}분' : '정각';
-        return '$periodStr ${isPm ? "오후" : "오전"} $h시 $mStr 알림';
+      if (_reminderTimes.isNotEmpty) {
+        if (_reminderTimes.length == 1) {
+          final t = _reminderTimes.first;
+          final isPm = t.hour >= 12;
+          final h = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
+          final mStr = t.minute > 0 ? '${t.minute}분' : '정각';
+          return '$periodStr ${isPm ? "오후" : "오전"} $h시 $mStr 알림';
+        } else {
+          return '$periodStr 하루 ${_reminderTimes.length}회 지정 시각 알림';
+        }
       }
-      return '$periodStr 지정된 시간에 알림';
+      return '$periodStr 지정 시간 알림';
     } else {
-      return '$periodStr $_reminderIntervalMinutes분 간격으로 알림';
+      final intervalStr = _reminderIntervalMinutes < 60
+          ? '$_reminderIntervalMinutes분'
+          : '${_reminderIntervalMinutes ~/ 60}시간';
+      if (_isNightExcluded) {
+        return '매일 $intervalStr 간격 (새벽 제외)';
+      } else {
+        return '매일 $intervalStr 간격 (24시간 연속)';
+      }
     }
   }
 
-  Future<void> _selectFixedTime() async {
+  /// 새벽(야간 수면) 시간 제외 여부
+  bool get _isNightExcluded => !(_reminderStartTime?.hour == 0 &&
+      (_reminderEndTime?.hour == 23 ||
+          _reminderEndTime?.hour == 24 ||
+          _reminderEndTime?.hour == 0));
+
+  /// 새벽 시간 제외 스위치 토글 핸들러
+  void _onNightExcludedChanged(bool excluded) {
+    setState(() {
+      if (excluded) {
+        _reminderStartTime = const TimeOfDay(hour: 9, minute: 0);
+        _reminderEndTime = const TimeOfDay(hour: 21, minute: 0);
+      } else {
+        _reminderStartTime = const TimeOfDay(hour: 0, minute: 0);
+        _reminderEndTime = const TimeOfDay(hour: 23, minute: 59);
+      }
+    });
+  }
+
+  /// 어르신 추천 프리셋 1-터치 적용
+  void _applySeniorPreset(SeniorHabitPreset preset) {
+    try {
+      HapticFeedback.mediumImpact();
+    } catch (_) {}
+
+    setState(() {
+      _titleController.text = preset.title;
+      _selectedIconKey = preset.iconKey;
+      _selectedColorValue = preset.colorValue;
+      _reminderEnabled = true;
+      _reminderType = preset.reminderType;
+      if (preset.reminderType == ReminderType.fixed) {
+        _reminderTimes = List<TimeOfDay>.from(preset.reminderTimes);
+        _sortReminderTimes();
+      } else {
+        _reminderIntervalMinutes = preset.reminderIntervalMinutes;
+        _reminderStartTime =
+            preset.reminderStartTime ?? const TimeOfDay(hour: 9, minute: 0);
+        _reminderEndTime =
+            preset.reminderEndTime ?? const TimeOfDay(hour: 21, minute: 0);
+      }
+      _habitType = preset.habitType;
+      _targetCount = preset.targetCount;
+      _unit = preset.unit;
+      _unitController.text = preset.unit;
+    });
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '✨ "${preset.title}" 설정이 적용되었습니다.',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Future<void> _editFixedTime(int index) async {
     final picked = await TimePickerSelectDialog.show(
       context: context,
-      initialTime: _reminderTime ?? const TimeOfDay(hour: 8, minute: 0),
-      title: '지정 알림 시간 설정',
+      initialTime: _reminderTimes[index],
+      title: '${index + 1}차 알림 시간 변경',
     );
     if (picked != null) {
       setState(() {
-        _reminderTime = picked;
-        _reminderEnabled = true;
+        _reminderTimes[index] = picked;
+        _sortReminderTimes();
       });
     }
+  }
+
+  Future<void> _addFixedTime() async {
+    if (_reminderTimes.length >= 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('알림 시간은 최대 6개까지 추가 가능합니다.')),
+      );
+      return;
+    }
+    final lastTime = _reminderTimes.isNotEmpty
+        ? _reminderTimes.last
+        : const TimeOfDay(hour: 8, minute: 30);
+    final initialNext = TimeOfDay(
+      hour: (lastTime.hour + 4) % 24,
+      minute: lastTime.minute,
+    );
+
+    final picked = await TimePickerSelectDialog.show(
+      context: context,
+      initialTime: initialNext,
+      title: '${_reminderTimes.length + 1}차 알림 시간 추가',
+    );
+    if (picked != null) {
+      final exists = _reminderTimes.any(
+        (t) => t.hour == picked.hour && t.minute == picked.minute,
+      );
+      if (exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('이미 등록된 알림 시간입니다.')),
+          );
+        }
+        return;
+      }
+      setState(() {
+        _reminderTimes.add(picked);
+        _sortReminderTimes();
+      });
+    }
+  }
+
+  void _removeFixedTime(int index) {
+    if (_reminderTimes.length <= 1) return;
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+    setState(() {
+      _reminderTimes.removeAt(index);
+    });
   }
 
   Future<void> _selectStartTime() async {
@@ -188,8 +358,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
 
     // 간격 알림 선택 시 시작 시간 < 종료 시간 유효성 검증
     if (_reminderEnabled && _reminderType == ReminderType.interval) {
-      final startMin =
-          (_reminderStartTime?.hour ?? 9) * 60 + (_reminderStartTime?.minute ?? 0);
+      final startMin = (_reminderStartTime?.hour ?? 9) * 60 +
+          (_reminderStartTime?.minute ?? 0);
       final endMin =
           (_reminderEndTime?.hour ?? 21) * 60 + (_reminderEndTime?.minute ?? 0);
       if (endMin <= startMin) {
@@ -198,7 +368,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
+                Icon(Icons.error_outline_rounded,
+                    color: Colors.white, size: 18),
                 SizedBox(width: 8),
                 Expanded(child: Text('알림 종료 시간은 시작 시간보다 늦어야 합니다.')),
               ],
@@ -217,8 +388,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         ? _unitController.text.trim()
         : '회';
 
-    final reminderTimeStr = _reminderTime != null
-        ? DateUtil.formatTime(_reminderTime!.hour, _reminderTime!.minute)
+    final reminderTimeStr = _reminderTimes.isNotEmpty
+        ? _reminderTimes
+            .map((t) => DateUtil.formatTime(t.hour, t.minute))
+            .join(',')
         : null;
     final reminderStartStr = _reminderStartTime != null
         ? DateUtil.formatTime(
@@ -281,312 +454,16 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     final habitTitle = _titleController.text.trim().isNotEmpty
         ? _titleController.text.trim()
         : (widget.habit?.title ?? '이 습관');
-    final habitIcon = AppIcons.getIcon(widget.habit?.iconName ?? _selectedIconKey);
-    final habitColor = Color(widget.habit?.colorValue ?? _selectedColorValue);
+    final habitIcon =
+        AppIcons.getIcon(widget.habit?.iconName ?? _selectedIconKey);
+    final habitColor =
+        Color(widget.habit?.colorValue ?? _selectedColorValue);
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
-      builder: (ctx) {
-        final isDark = ctx.isDarkMode;
-        return Dialog(
-          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-          elevation: 12,
-          shadowColor: Colors.black.withValues(alpha: 0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0xFFE2E8F0),
-              width: 1,
-            ),
-          ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. 헤더 영역 (아이콘, 타이틀, 닫기 버튼)
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF182234)
-                      : const Color(0xFFF8FAFC),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFEF4444).withValues(alpha: 0.25),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.delete_forever_rounded,
-                        color: Color(0xFFEF4444),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '습관 삭제',
-                            style: TextStyle(
-                              color: ctx.textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 17,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '데이터가 영구적으로 삭제됩니다',
-                            style: TextStyle(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.9),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                      ),
-                      onPressed: () => Navigator.of(ctx).pop(false),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      splashRadius: 18,
-                    ),
-                  ],
-                ),
-              ),
-
-              // 헤더와 내용 구분선
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE2E8F0),
-              ),
-
-              // 2. 내용 영역 (선택된 습관 프리뷰 & 안내 텍스트)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 대상 습관 프리뷰 카드
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: habitColor.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            alignment: Alignment.center,
-                            child: Icon(
-                              habitIcon,
-                              color: habitColor,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              habitTitle,
-                              style: TextStyle(
-                                color: ctx.textPrimary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // 경고 안내 박스
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.07),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFFEF4444).withValues(alpha: 0.18),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 1),
-                            child: Icon(
-                              Icons.warning_amber_rounded,
-                              color: Color(0xFFEF4444),
-                              size: 17,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '이 습관과 관련된 모든 수행 기록, 통계 및 스트릭 데이터가 삭제되며 되돌릴 수 없습니다.',
-                              style: TextStyle(
-                                color: isDark
-                                    ? const Color(0xFFFDA4AF)
-                                    : const Color(0xFFBE123C),
-                                fontSize: 12.5,
-                                height: 1.45,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 3. 버튼 영역 (취소 / 삭제 버튼)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Row(
-                  children: [
-                    // 취소 버튼
-                    Expanded(
-                      flex: 4,
-                      child: SizedBox(
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(ctx).pop(false),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: isDark
-                                ? const Color(0xFF334155).withValues(alpha: 0.4)
-                                : const Color(0xFFF1F5F9),
-                            foregroundColor: ctx.textSecondary,
-                            side: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF475569)
-                                  : const Color(0xFFCBD5E1),
-                              width: 1,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: EdgeInsets.zero,
-                          ),
-                          child: Text(
-                            '취소',
-                            style: TextStyle(
-                              color: ctx.textSecondary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-
-                    // 삭제하기 버튼
-                    Expanded(
-                      flex: 6,
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFEF4444),
-                              Color(0xFFDC2626),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => Navigator.of(ctx).pop(true),
-                            borderRadius: BorderRadius.circular(14),
-                            splashColor: Colors.white.withValues(alpha: 0.2),
-                            highlightColor: Colors.white.withValues(alpha: 0.1),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  '삭제하기',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 14.5,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    final confirmed = await HabitDeleteDialog.show(
+      context,
+      habitTitle: habitTitle,
+      habitIcon: habitIcon,
+      habitColor: habitColor,
     );
 
     if (confirmed == true && mounted) {
@@ -597,1903 +474,51 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     }
   }
 
-  void _showTargetCountHelpDialog() {
-    showDialog<void>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
-      builder: (ctx) {
-        final isDark = ctx.isDarkMode;
-        return Dialog(
-          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-          elevation: 16,
-          shadowColor: Colors.black.withValues(alpha: 0.35),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: BorderSide(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : const Color(0xFFE2E8F0),
-              width: 1,
-            ),
-          ),
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. 헤더 영역 (아이콘, 타이틀, 닫기 버튼)
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF182234) : const Color(0xFFF8FAFC),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.25),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.flag_rounded,
-                        color: AppColors.primaryLight,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '목표 횟수 설정 안내',
-                            style: TextStyle(
-                              color: ctx.textPrimary,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '나에게 맞는 실천 방식을 선택하세요',
-                            style: TextStyle(
-                              color: ctx.textMuted,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 20,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                      ),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      splashRadius: 18,
-                    ),
-                  ],
-                ),
-              ),
-
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : const Color(0xFFE2E8F0),
-              ),
-
-              // 2. 내용 영역
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
-                child: Column(
-                  children: [
-                    // 옵션 1: 1회 체크형
-                    _buildHelpCard(
-                      ctx: ctx,
-                      isDark: isDark,
-                      icon: Icons.check_circle_outline_rounded,
-                      iconColor: const Color(0xFF10B981),
-                      title: '스위치 OFF (기본 체크형)',
-                      subtitle: '하루 1회 원터치 완료',
-                      description: '영양제 복용, 아침 기상, 일기 쓰기처럼 하루에 딱 한 번 체크하여 완료하는 습관에 적합합니다.',
-                    ),
-                    const SizedBox(height: 10),
-
-                    // 옵션 2: 누적 횟수형
-                    _buildHelpCard(
-                      ctx: ctx,
-                      isDark: isDark,
-                      icon: Icons.add_circle_outline_rounded,
-                      iconColor: AppColors.primaryLight,
-                      title: '스위치 ON (누적 카운트형)',
-                      subtitle: '여러 번 누적해서 목표 달성',
-                      description: '물 8잔 마시기, 스쿼트 50회, 독서 30쪽처럼 버튼(+ / -)을 눌러 하루 목표치까지 누적 달성하는 습관에 적합합니다.',
-                    ),
-                    const SizedBox(height: 12),
-
-                    // 안내 팁
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.lightbulb_outline_rounded,
-                            color: AppColors.primaryLight,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '목표 수치와 단위(잔, 회, 분, 쪽 등)를 자유롭게 설정할 수 있어요.',
-                              style: TextStyle(
-                                color: isDark ? const Color(0xFFDDD6FE) : AppColors.primaryDark,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // 3. 하단 확인 버튼
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Container(
-                  height: 46,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), AppColors.primaryLight],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.of(ctx).pop(),
-                      borderRadius: BorderRadius.circular(14),
-                      child: const Center(
-                        child: Text(
-                          '확인',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHelpCard({
-    required BuildContext ctx,
-    required bool isDark,
+  Widget _buildSectionHeader({
     required IconData icon,
-    required Color iconColor,
     required String title,
-    required String subtitle,
-    required String description,
+    String? subtitle,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: iconColor, size: 16),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: ctx.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: iconColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppColors.primaryLight),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(width: 8),
           Text(
-            description,
+            title,
             style: TextStyle(
-              color: ctx.textSecondary,
-              fontSize: 12,
-              height: 1.45,
+              color: context.textPrimary,
+              fontSize: 15.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
             ),
           ),
+          if (subtitle != null) ...[
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentColor = Color(_selectedColorValue);
-
-    return Scaffold(
-      backgroundColor: context.bg,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
-        child: Container(
-          decoration: BoxDecoration(
-            color: context.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: context.surfaceBorder,
-                width: 1.0,
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(
-                    alpha: context.isDarkMode ? 0.3 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  // 원형 뒤로가기 버튼
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: context.isDarkMode
-                            ? Colors.white.withValues(alpha: 0.06)
-                            : Colors.black.withValues(alpha: 0.04),
-                        border: Border.all(
-                          color: context.surfaceBorder.withValues(alpha: 0.6),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 16,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // 그라데이션 뱃지
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _isEditing
-                            ? [const Color(0xFF7C3AED), AppColors.primaryLight]
-                            : [const Color(0xFF10B981), const Color(0xFF34D399)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _isEditing ? Icons.tune_rounded : Icons.add_task_rounded,
-                          color: Colors.white,
-                          size: 15,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _isEditing ? '습관 편집' : '새 습관',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 13,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // 다크/라이트 모드 전환 원형 버튼
-                  Material(
-                    color: Colors.transparent,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () {
-                        try {
-                          HapticFeedback.selectionClick();
-                        } catch (_) {}
-                        context
-                            .read<ThemeProvider>()
-                            .toggleTheme(!context.isDarkMode);
-                      },
-                      child: Ink(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: context.isDarkMode
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.04),
-                          border: Border.all(
-                            color: context.surfaceBorder.withValues(alpha: 0.6),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Center(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
-                            transitionBuilder: (child, anim) =>
-                                RotationTransition(
-                              turns: anim,
-                              child: ScaleTransition(scale: anim, child: child),
-                            ),
-                            child: Icon(
-                              context.isDarkMode
-                                  ? Icons.light_mode_rounded
-                                  : Icons.dark_mode_rounded,
-                              key: ValueKey(context.isDarkMode),
-                              size: 18,
-                              color: context.isDarkMode
-                                  ? const Color(0xFFFBBF24)
-                                  : const Color(0xFF6366F1),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // 고급스러운 원형 삭제 버튼 (수정 모드일 때만 표시)
-                  if (_isEditing) ...[
-                    const SizedBox(width: 8),
-                    Material(
-                      color: Colors.transparent,
-                      shape: const CircleBorder(),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () {
-                          try {
-                            HapticFeedback.lightImpact();
-                          } catch (_) {}
-                          _deleteHabit();
-                        },
-                        child: Ink(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: context.isDarkMode
-                                ? Colors.white.withValues(alpha: 0.06)
-                                : Colors.black.withValues(alpha: 0.04),
-                            border: Border.all(
-                              color: context.surfaceBorder.withValues(alpha: 0.6),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.delete_outline_rounded,
-                              size: 18,
-                              color: Color(0xFFEF4444),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            children: [
-              // 1. 습관 이름 입력 카드
-              _buildSectionHeader(
-                icon: Icons.edit_note_rounded,
-                title: '습관 이름',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.surfaceBorder, width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDarkMode ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: Row(
-                  children: [
-                    // 현재 선택된 아이콘 미리보기
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: currentColor.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        AppIcons.getIcon(_selectedIconKey),
-                        color: currentColor,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _titleController,
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '예: 아침 10분 독서, 영양제 복용, 물 마시기',
-                          hintStyle: TextStyle(
-                            color: context.textMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) {
-                            return '습관 이름을 입력해주세요.';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 2. 하루 목표 횟수 설정 (선택 옵션 카드)
-              _buildSectionHeader(
-                icon: Icons.flag_rounded,
-                title: '목표 횟수 (선택)',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: _habitType == HabitType.count
-                        ? AppColors.primary.withValues(alpha: 0.4)
-                        : context.surfaceBorder,
-                    width: 1.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDarkMode ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _habitType == HabitType.count
-                                  ? AppColors.primary.withValues(alpha: 0.15)
-                                  : (context.isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.black.withValues(alpha: 0.04)),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.format_list_numbered_rounded,
-                              size: 18,
-                              color: _habitType == HabitType.count
-                                  ? AppColors.primaryLight
-                                  : context.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      '하루 목표 횟수 설정',
-                                      style: TextStyle(
-                                        color: context.textPrimary,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    GestureDetector(
-                                      onTap: _showTargetCountHelpDialog,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: AppColors.primary.withValues(
-                                              alpha: context.isDarkMode ? 0.2 : 0.1),
-                                        ),
-                                        child: const Icon(
-                                          Icons.help_outline_rounded,
-                                          size: 14,
-                                          color: AppColors.primaryLight,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _habitType == HabitType.count
-                                      ? '하루 목표 $_targetCount${_unitController.text} 누적 완료'
-                                      : '기본 1일 1회 체크 (비활성)',
-                                  style: TextStyle(
-                                    color: _habitType == HabitType.count
-                                        ? AppColors.primaryLight
-                                        : context.textMuted,
-                                    fontSize: 12,
-                                    fontWeight: _habitType == HabitType.count
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _habitType == HabitType.count,
-                            activeTrackColor: AppColors.primary,
-                            activeThumbColor: Colors.white,
-                            onChanged: (enabled) {
-                              setState(() {
-                                _habitType = enabled ? HabitType.count : HabitType.check;
-                                if (enabled && _targetCount <= 1) {
-                                  _targetCount = 8;
-                                  _unit = '잔';
-                                  _unitController.text = '잔';
-                                }
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (_habitType == HabitType.count) ...[
-                      Divider(color: context.surfaceBorder, height: 1),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            // 목표 횟수 스테퍼 컨트롤러
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '하루 목표 수치',
-                                  style: TextStyle(
-                                    color: context.textSecondary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: _targetCount > 2
-                                          ? () => setState(() => _targetCount--)
-                                          : null,
-                                      child: Container(
-                                        width: 34,
-                                        height: 34,
-                                        decoration: BoxDecoration(
-                                          color: context.bg,
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: context.surfaceBorder),
-                                        ),
-                                        child: Icon(
-                                          Icons.remove_rounded,
-                                          size: 18,
-                                          color: _targetCount > 2
-                                              ? context.textPrimary
-                                              : context.textMuted.withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 10),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: AppColors.primary.withValues(alpha: 0.3),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        '$_targetCount',
-                                        style: const TextStyle(
-                                          color: AppColors.primaryLight,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: _targetCount < 100
-                                          ? () => setState(() => _targetCount++)
-                                          : null,
-                                      child: Container(
-                                        width: 34,
-                                        height: 34,
-                                        decoration: BoxDecoration(
-                                          color: context.bg,
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: context.surfaceBorder),
-                                        ),
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          size: 18,
-                                          color: _targetCount < 100
-                                              ? context.textPrimary
-                                              : context.textMuted.withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-
-                            // 단위 선택 칩
-                            Row(
-                              children: [
-                                Text(
-                                  '단위',
-                                  style: TextStyle(
-                                    color: context.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    child: Row(
-                                      children: _suggestedUnits.map((u) {
-                                        final isSelected = _unitController.text == u;
-                                        return GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              _unit = u;
-                                              _unitController.text = u;
-                                            });
-                                          },
-                                          child: Container(
-                                            margin: const EdgeInsets.only(right: 6),
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? AppColors.primary
-                                                  : context.bg,
-                                              borderRadius: BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? AppColors.primary
-                                                    : context.surfaceBorder,
-                                              ),
-                                            ),
-                                            child: Text(
-                                              u,
-                                              style: TextStyle(
-                                                color: isSelected
-                                                    ? Colors.white
-                                                    : context.textSecondary,
-                                                fontSize: 12,
-                                                fontWeight: isSelected
-                                                    ? FontWeight.w700
-                                                    : FontWeight.w500,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 3. 아이콘 & 테마 색상 선택 카드
-              _buildSectionHeader(
-                icon: Icons.palette_rounded,
-                title: '아이콘 및 색상',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.surfaceBorder, width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDarkMode ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 아이콘 그리드
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: AppIcons.icons.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 6,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemBuilder: (context, index) {
-                        final item = AppIcons.icons[index];
-                        final isSelected = _selectedIconKey == item.key;
-                        return GestureDetector(
-                          onTap: () {
-                            try {
-                              HapticFeedback.selectionClick();
-                            } catch (_) {}
-                            setState(() => _selectedIconKey = item.key);
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? currentColor.withValues(alpha: 0.22)
-                                  : (context.isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.04)
-                                      : Colors.black.withValues(alpha: 0.03)),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isSelected
-                                    ? currentColor
-                                    : context.surfaceBorder.withValues(alpha: 0.6),
-                                width: isSelected ? 1.8 : 0.8,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                item.icon,
-                                color: isSelected
-                                    ? currentColor
-                                    : context.textSecondary,
-                                size: 22,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Divider(color: context.surfaceBorder, height: 1),
-                    const SizedBox(height: 14),
-
-                    // 색상 팔레트 스크롤
-                    Text(
-                      '포인트 색상',
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: AppColors.habitColorPalette.map((c) {
-                          final isSelected = _selectedColorValue == c.toARGB32();
-                          return GestureDetector(
-                            onTap: () {
-                              try {
-                                HapticFeedback.selectionClick();
-                              } catch (_) {}
-                              setState(() => _selectedColorValue = c.toARGB32());
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 10),
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: c,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: isSelected
-                                      ? (context.isDarkMode ? Colors.white : Colors.black87)
-                                      : Colors.transparent,
-                                  width: isSelected ? 2.5 : 0,
-                                ),
-                                boxShadow: [
-                                  if (isSelected)
-                                    BoxShadow(
-                                      color: c.withValues(alpha: 0.4),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                ],
-                              ),
-                              child: isSelected
-                                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                                  : null,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 4. 반복 주기 설정 카드
-              _buildSectionHeader(
-                icon: Icons.calendar_month_rounded,
-                title: '반복 주기',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: context.surfaceBorder, width: 1.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDarkMode ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Row(
-                        children: RepeatType.values.map((type) {
-                          final isSelected = _repeatType == type;
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                try {
-                                  HapticFeedback.selectionClick();
-                                } catch (_) {}
-                                setState(() => _repeatType = type);
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 160),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primary.withValues(alpha: 0.18)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: isSelected
-                                      ? Border.all(color: AppColors.primary, width: 1.2)
-                                      : null,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    type.label,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? AppColors.primaryLight
-                                          : context.textSecondary,
-                                      fontSize: 13,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    if (_repeatType == RepeatType.weeklyDays) ...[
-                      Divider(color: context.surfaceBorder, height: 1),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        child: Row(
-                          children: List.generate(7, (i) {
-                            final day = i + 1;
-                            final isSelected = _repeatDays.contains(day);
-                            const dayLabels = ['', '월', '화', '수', '목', '금', '토', '일'];
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  try {
-                                    HapticFeedback.selectionClick();
-                                  } catch (_) {}
-                                  setState(() {
-                                    if (isSelected) {
-                                      if (_repeatDays.length > 1) {
-                                        _repeatDays.remove(day);
-                                      }
-                                    } else {
-                                      _repeatDays.add(day);
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    gradient: isSelected
-                                        ? const LinearGradient(
-                                            colors: [AppColors.primary, AppColors.primaryDark],
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                          )
-                                        : null,
-                                    color: isSelected ? null : context.bg,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: isSelected ? AppColors.primary : context.surfaceBorder,
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      dayLabels[day],
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : context.textSecondary,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ],
-                    if (_repeatType == RepeatType.weeklyCount) ...[
-                      Divider(color: context.surfaceBorder, height: 1),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '일주일에 몇 번?',
-                                  style: TextStyle(
-                                    color: context.textPrimary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: _repeatCount > 1
-                                          ? () => setState(() => _repeatCount--)
-                                          : null,
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: context.bg,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: context.surfaceBorder),
-                                        ),
-                                        child: Icon(
-                                          Icons.remove_rounded,
-                                          size: 18,
-                                          color: _repeatCount > 1
-                                              ? context.textPrimary
-                                              : context.textMuted.withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                                      child: Text(
-                                        '주 $_repeatCount회',
-                                        style: const TextStyle(
-                                          color: AppColors.primaryLight,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: _repeatCount < 7
-                                          ? () => setState(() => _repeatCount++)
-                                          : null,
-                                      child: Container(
-                                        width: 32,
-                                        height: 32,
-                                        decoration: BoxDecoration(
-                                          color: context.bg,
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: context.surfaceBorder),
-                                        ),
-                                        child: Icon(
-                                          Icons.add_rounded,
-                                          size: 18,
-                                          color: _repeatCount < 7
-                                              ? context.textPrimary
-                                              : context.textMuted.withValues(alpha: 0.4),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: context.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: context.surfaceBorder),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.info_outline_rounded,
-                                        size: 14.5,
-                                        color: AppColors.primaryLight,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '주 $_repeatCount회 동작 안내',
-                                        style: TextStyle(
-                                          color: context.textPrimary,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '• 요일을 미리 정하지 않고 이번 주(월~일) 중 실천한 날 자유롭게 체크합니다.\n'
-                                    '• 목표 횟수($_repeatCount회)를 다 채울 때까지 일주일 내내 실천 목록에 표시되며 알림이 울립니다.\n'
-                                    '• 매주 일요일 자정(24:00)에 주간 카운트가 마감되고 새로운 주가 시작됩니다.',
-                                    style: TextStyle(
-                                      color: context.textSecondary,
-                                      fontSize: 11.5,
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 5. 알림 설정 카드
-              _buildSectionHeader(
-                icon: Icons.notifications_active_rounded,
-                title: '알림 설정',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.surface,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: _reminderEnabled
-                        ? AppColors.primary.withValues(alpha: 0.4)
-                        : context.surfaceBorder,
-                    width: 1.0,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDarkMode ? 0.15 : 0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _reminderEnabled
-                                  ? AppColors.primary.withValues(alpha: 0.15)
-                                  : (context.isDarkMode
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.black.withValues(alpha: 0.04)),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.alarm_rounded,
-                              size: 18,
-                              color: _reminderEnabled
-                                  ? AppColors.primaryLight
-                                  : context.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '알림 받기',
-                                  style: TextStyle(
-                                    color: context.textPrimary,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _getReminderSubtitle(),
-                                  style: TextStyle(
-                                    color: _reminderEnabled
-                                        ? AppColors.primaryLight
-                                        : context.textMuted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _reminderEnabled,
-                            activeTrackColor: AppColors.primary,
-                            activeThumbColor: Colors.white,
-                            onChanged: (val) async {
-                              if (val) {
-                                final isGranted = await NotificationService
-                                    .checkSystemNotificationPermission();
-                                if (!isGranted && mounted) {
-                                  final requested = await NotificationService
-                                      .requestSystemNotificationPermission();
-                                  if (!requested && mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .hideCurrentSnackBar();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Row(
-                                          children: [
-                                            Icon(
-                                                Icons
-                                                    .notifications_off_rounded,
-                                                color: Colors.white,
-                                                size: 18),
-                                            SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                  '기기 설정에서 알림 권한을 켜주셔야 알림이 정상적으로 울립니다.'),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: AppColors.fireOrange,
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10)),
-                                      ),
-                                    );
-                                  }
-                                }
-                              }
-                              setState(() => _reminderEnabled = val);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    if (_reminderEnabled) ...[
-                      Divider(color: context.surfaceBorder, height: 1),
-
-                      // 1) 알림 방식 선택 (지정 시간 vs 반복 간격)
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: context.isDarkMode
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: ReminderType.values.map((type) {
-                            final isSelected = _reminderType == type;
-                            return Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  try {
-                                    HapticFeedback.selectionClick();
-                                  } catch (_) {}
-                                  setState(() => _reminderType = type);
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 9),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? (context.isDarkMode
-                                            ? context.surface
-                                            : Colors.white)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(9),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: context.isDarkMode
-                                                    ? 0.25
-                                                    : 0.06,
-                                              ),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        type == ReminderType.fixed
-                                            ? Icons.schedule_rounded
-                                            : Icons.update_rounded,
-                                        size: 15,
-                                        color: isSelected
-                                            ? AppColors.primaryLight
-                                            : context.textMuted,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        type.label,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? (context.isDarkMode
-                                                  ? Colors.white
-                                                  : AppColors.primaryLight)
-                                              : context.textSecondary,
-                                          fontSize: 13,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w800
-                                              : FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-
-                      // 2) 지정 시간 알림 UI (고급스러운 디지털 시계 디자인)
-                      if (_reminderType == ReminderType.fixed) ...[
-                        Builder(
-                          builder: (context) {
-                            final time = _reminderTime ??
-                                const TimeOfDay(hour: 8, minute: 0);
-                            final isPm = time.hour >= 12;
-                            final displayHour = time.hour == 0
-                                ? 12
-                                : (time.hour > 12
-                                    ? time.hour - 12
-                                    : time.hour);
-                            final hourStr =
-                                displayHour.toString().padLeft(2, '0');
-                            final minuteStr =
-                                time.minute.toString().padLeft(2, '0');
-                            final periodStr = isPm ? '오후' : '오전';
-
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
-                              child: Material(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                                clipBehavior: Clip.antiAlias,
-                                child: InkWell(
-                                  onTap: () {
-                                    try {
-                                      HapticFeedback.lightImpact();
-                                    } catch (_) {}
-                                    _selectFixedTime();
-                                  },
-                                  child: Ink(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 18, vertical: 16),
-                                    decoration: BoxDecoration(
-                                      color: context.isDarkMode
-                                          ? Colors.white.withValues(alpha: 0.04)
-                                          : AppColors.primary
-                                              .withValues(alpha: 0.04),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: AppColors.primary.withValues(
-                                            alpha: context.isDarkMode
-                                                ? 0.3
-                                                : 0.2),
-                                        width: 1.2,
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            // 디지털 시계 디스플레이
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.baseline,
-                                              textBaseline:
-                                                  TextBaseline.alphabetic,
-                                              children: [
-                                                // 오전 / 오후 캡슐 뱃지
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: AppColors.primary
-                                                        .withValues(
-                                                            alpha: 0.14),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            6),
-                                                  ),
-                                                  child: Text(
-                                                    periodStr,
-                                                    style: const TextStyle(
-                                                      color: AppColors
-                                                          .primaryLight,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 10),
-                                                // 시(Hour)
-                                                Text(
-                                                  hourStr,
-                                                  style: TextStyle(
-                                                    color: context.textPrimary,
-                                                    fontSize: 32,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: -1.0,
-                                                    fontFeatures: const [
-                                                      FontFeature
-                                                          .tabularFigures()
-                                                    ],
-                                                  ),
-                                                ),
-                                                // 콜론 구분자
-                                                Padding(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(horizontal: 4),
-                                                  child: Text(
-                                                    ':',
-                                                    style: TextStyle(
-                                                      color: AppColors
-                                                          .primaryLight
-                                                          .withValues(
-                                                              alpha: 0.8),
-                                                      fontSize: 28,
-                                                      fontWeight:
-                                                          FontWeight.w900,
-                                                    ),
-                                                  ),
-                                                ),
-                                                // 분(Minute)
-                                                Text(
-                                                  minuteStr,
-                                                  style: TextStyle(
-                                                    color: context.textPrimary,
-                                                    fontSize: 32,
-                                                    fontWeight: FontWeight.w900,
-                                                    letterSpacing: -1.0,
-                                                    fontFeatures: const [
-                                                      FontFeature
-                                                          .tabularFigures()
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-
-                                            // 고급스러운 시간 변경 버튼
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 7),
-                                              decoration: BoxDecoration(
-                                                gradient: const LinearGradient(
-                                                  colors: [
-                                                    AppColors.primary,
-                                                    AppColors.primaryLight
-                                                  ],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: AppColors.primary
-                                                        .withValues(alpha: 0.3),
-                                                    blurRadius: 6,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: const Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.access_time_rounded,
-                                                    size: 14,
-                                                    color: Colors.white,
-                                                  ),
-                                                  SizedBox(width: 5),
-                                                  Text(
-                                                    '시간 변경',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        // 설명 문구
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.check_circle_rounded,
-                                              size: 13,
-                                              color: Color(0xFF10B981),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              '매일 $periodStr $displayHour시 ${time.minute > 0 ? '${time.minute}분에 ' : ''}알림이 울립니다',
-                                              style: TextStyle(
-                                                color: context.textSecondary,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-
-                      // 3) 반복 간격 알림 UI
-                      if (_reminderType == ReminderType.interval) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildIntervalTimeCard(
-                                      title: '시작 시간',
-                                      icon: Icons.wb_sunny_outlined,
-                                      time: _reminderStartTime ??
-                                          const TimeOfDay(hour: 9, minute: 0),
-                                      onTap: _selectStartTime,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
-                                    child: Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: context.isDarkMode
-                                            ? Colors.white
-                                                .withValues(alpha: 0.08)
-                                            : Colors.black
-                                                .withValues(alpha: 0.05),
-                                      ),
-                                      child: Icon(
-                                        Icons.arrow_forward_rounded,
-                                        size: 13,
-                                        color: context.textMuted,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: _buildIntervalTimeCard(
-                                      title: '종료 시간',
-                                      icon: Icons.nights_stay_outlined,
-                                      time: _reminderEndTime ??
-                                          const TimeOfDay(hour: 21, minute: 0),
-                                      onTap: _selectEndTime,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                '반복 간격',
-                                style: TextStyle(
-                                  color: context.textSecondary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children:
-                                    _suggestedIntervals.map<Widget>((mins) {
-                                  final isSelected =
-                                      _reminderIntervalMinutes == mins;
-                                  final label = mins < 60
-                                      ? '$mins분마다'
-                                      : '${mins ~/ 60}시간마다';
-                                  return Expanded(
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        try {
-                                          HapticFeedback.selectionClick();
-                                        } catch (_) {}
-                                        setState(() =>
-                                            _reminderIntervalMinutes = mins);
-                                      },
-                                      child: Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 3),
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 9),
-                                        decoration: BoxDecoration(
-                                          gradient: isSelected
-                                              ? const LinearGradient(
-                                                  colors: [
-                                                    AppColors.primary,
-                                                    AppColors.primaryLight
-                                                  ],
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                )
-                                              : null,
-                                          color: isSelected
-                                              ? null
-                                              : (context.isDarkMode
-                                                  ? Colors.white
-                                                      .withValues(alpha: 0.04)
-                                                  : Colors.black
-                                                      .withValues(alpha: 0.03)),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : context.surfaceBorder,
-                                            width: 1,
-                                          ),
-                                          boxShadow: isSelected
-                                              ? [
-                                                  BoxShadow(
-                                                    color: AppColors.primary
-                                                        .withValues(alpha: 0.25),
-                                                    blurRadius: 4,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ]
-                                              : null,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            label,
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : context.textSecondary,
-                                              fontSize: 11,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w800
-                                                  : FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-
-                      // 4) 알림 테스트 발송 버튼 (하단 배치)
-                      Divider(
-                          color: context.surfaceBorder.withValues(alpha: 0.7),
-                          height: 1),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: () async {
-                              try {
-                                HapticFeedback.mediumImpact();
-                              } catch (_) {}
-                              final success =
-                                  await NotificationService.showTestNotification(
-                                title:
-                                    '⚡ [${_titleController.text.trim().isEmpty ? '습관 알림' : _titleController.text.trim()}] 실천 시간!',
-                                body: '체크 한 번, 3초 컷 ⚡️',
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      success
-                                          ? '⚡ 테스트 알림이 발송되었습니다! (화면 상단바 확인)'
-                                          : '⚠️ 알림 권한이 차단되어 있습니다. 알림 설정을 허용해주세요.',
-                                    ),
-                                    duration: const Duration(seconds: 2),
-                                  ),
-                                );
-                              }
-                            },
-                            child: Ink(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(
-                                color: context.isDarkMode
-                                    ? Colors.white.withValues(alpha: 0.04)
-                                    : AppColors.primary.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppColors.primary.withValues(
-                                      alpha: context.isDarkMode ? 0.2 : 0.15),
-                                  width: 0.9,
-                                ),
-                              ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.notifications_active_rounded,
-                                    size: 15,
-                                    color: AppColors.primaryLight,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    '알림 테스트 울리기',
-                                    style: TextStyle(
-                                      color: AppColors.primaryLight,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 6. 하단 저장 버튼 (프리미엄 와이드 버튼)
-              GestureDetector(
-                onTap: _saveHabit,
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDark],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isEditing ? Icons.check_circle_rounded : Icons.bolt_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isEditing ? '변경사항 저장하기' : '3초 습관 시작하기',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 
@@ -2509,7 +534,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+            color: Colors.black
+                .withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -2518,12 +544,9 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 모든 메뉴 공통 가로 100% 하단 배너 광고
           const AdBannerSlot(),
-          // 슬림 & 프리미엄 커스텀 탭 내비게이션 바
           SafeArea(
             top: false,
-            bottom: true,
             child: SizedBox(
               height: 54,
               child: Row(
@@ -2561,48 +584,48 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     required IconData activeIcon,
     required String label,
   }) {
-    final isSelected = widget.initialTabIndex == index;
-    final activeColor = context.isDarkMode ? const Color(0xFFA78BFA) : AppColors.primary;
-    final activeTextColor = context.isDarkMode ? const Color(0xFFDDD6FE) : AppColors.primaryDark;
-    final inactiveColor = context.textMuted;
+    final isSelected = _currentTabIndex == index;
+    final activeColor = AppColors.primaryLight;
+    final inactiveColor = context.textMuted.withValues(alpha: 0.65);
 
     return Expanded(
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
+            try {
+              HapticFeedback.selectionClick();
+            } catch (_) {}
             Navigator.of(context).pop(index);
           },
-          splashColor: AppColors.primary.withValues(alpha: 0.1),
-          highlightColor: Colors.transparent,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 상단 캡슐형 아이콘 하이라이트
               AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
+                      ? AppColors.primary
+                          .withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
                   isSelected ? activeIcon : icon,
-                  size: 21,
                   color: isSelected ? activeColor : inactiveColor,
+                  size: 22,
                 ),
               ),
               const SizedBox(height: 2),
-              // 텍스트 라벨
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 200),
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 11,
                   fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  color: isSelected ? activeTextColor : inactiveColor,
+                  color: isSelected ? activeColor : inactiveColor,
                   letterSpacing: -0.2,
                 ),
                 child: Text(label),
@@ -2614,121 +637,383 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     );
   }
 
-  Widget _buildIntervalTimeCard({
-    required String title,
-    required IconData icon,
-    required TimeOfDay time,
-    required VoidCallback onTap,
-  }) {
-    final isPm = time.hour >= 12;
-    final displayHour =
-        time.hour == 0 ? 12 : (time.hour > 12 ? time.hour - 12 : time.hour);
-    final hourStr = displayHour.toString().padLeft(2, '0');
-    final minuteStr = time.minute.toString().padLeft(2, '0');
-    final periodStr = isPm ? '오후' : '오전';
+  @override
+  Widget build(BuildContext context) {
+    final currentColor = Color(_selectedColorValue);
 
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          try {
-            HapticFeedback.lightImpact();
-          } catch (_) {}
-          onTap();
-        },
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: context.isDarkMode
-                ? Colors.white.withValues(alpha: 0.04)
-                : AppColors.primary.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.primary
-                  .withValues(alpha: context.isDarkMode ? 0.25 : 0.15),
-              width: 1.0,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 13, color: AppColors.primaryLight),
-                  const SizedBox(width: 4),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+    return Scaffold(
+      backgroundColor: context.bg,
+      appBar: AppBar(
+        backgroundColor: context.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        automaticallyImplyLeading: false,
+        titleSpacing: 16,
+        title: Row(
+          children: [
+            // 뒤로가기 버튼 (다른 화면과 조화로운 38x38 규격)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: context.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.surfaceBorder, width: 1.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 16,
+                    color: context.textPrimary,
+                  ),
+                ),
               ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      periodStr,
-                      style: const TextStyle(
-                        color: AppColors.primaryLight,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+            ),
+            const SizedBox(width: 12),
+
+            // 그라데이션 타이틀 배지
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _isEditing ? '습관 편집' : '새 습관',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            Text(
+              _isEditing ? '설정 변경' : '만들기',
+              style: TextStyle(
+                color: context.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 18.5,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 다크/라이트 모드 전환 버튼 (다른 화면과 통일된 38x38 규격)
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, child) {
+                    return Tooltip(
+                      message: themeProvider.isDarkMode ? '라이트 모드 전환' : '다크 모드 전환',
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          try {
+                            HapticFeedback.selectionClick();
+                          } catch (_) {}
+                          themeProvider.toggleTheme(!themeProvider.isDarkMode);
+                        },
+                        child: Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: context.surface,
+                            border: Border.all(
+                              color: context.surfaceBorder,
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            themeProvider.isDarkMode
+                                ? Icons.light_mode_rounded
+                                : Icons.dark_mode_rounded,
+                            size: 18,
+                            color: themeProvider.isDarkMode
+                                ? const Color(0xFFFBBF24)
+                                : context.textSecondary,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // 삭제 버튼 (수정 모드일 때만 표시, 다른 화면과 통일된 38x38 규격)
+                if (_isEditing) ...[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: '습관 삭제',
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _deleteHabit,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.18 : 0.08),
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.35 : 0.2),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                          color: Color(0xFFEF4444),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$hourStr:$minuteStr',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
                 ],
+              ],
+            ),
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: context.surfaceBorder,
+            height: 1.0,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            children: [
+              // 0. 어르신을 위한 1-터치 빠른 추천 습관 (신규 등록 시 최상단 제공)
+              if (!_isEditing)
+                SeniorHabitPresetsCard(
+                  onSelectPreset: _applySeniorPreset,
+                ),
+
+              // 1. 습관 이름 입력 카드
+              _buildSectionHeader(
+                icon: Icons.edit_note_rounded,
+                title: '습관 이름',
+                subtitle: '무엇을 실천하시나요?',
               ),
+              HabitTitleCard(
+                titleController: _titleController,
+                selectedIconKey: _selectedIconKey,
+                currentColor: currentColor,
+              ),
+              const SizedBox(height: 22),
+
+              // 2. 아이콘 & 테마 색상 선택 카드 (이름 바로 아래에서 비주얼 정체성 완성)
+              _buildSectionHeader(
+                icon: Icons.palette_rounded,
+                title: '아이콘 및 색상',
+                subtitle: '원하는 색상과 아이콘을 골라보세요',
+              ),
+              HabitIconColorCard(
+                selectedIconKey: _selectedIconKey,
+                selectedColorValue: _selectedColorValue,
+                onIconSelected: (key) {
+                  setState(() => _selectedIconKey = key);
+                },
+                onColorSelected: (val) {
+                  setState(() => _selectedColorValue = val);
+                },
+              ),
+              const SizedBox(height: 22),
+
+              // 3. 반복 주기 설정 카드 (어떤 요일/주기에 실천할지 선택)
+              _buildSectionHeader(
+                icon: Icons.calendar_month_rounded,
+                title: '반복 주기',
+                subtitle: '언제 실천하시나요?',
+              ),
+              HabitRepeatCard(
+                repeatType: _repeatType,
+                repeatDays: _repeatDays,
+                repeatCount: _repeatCount,
+                onRepeatTypeSelected: (type) {
+                  setState(() {
+                    if (type == RepeatType.weeklyDays &&
+                        _repeatType != RepeatType.weeklyDays &&
+                        _repeatDays.length == 7) {
+                      _repeatDays = [1, 2, 3, 4, 5];
+                    }
+                    _repeatType = type;
+                  });
+                },
+                onRepeatDaysChanged: (days) {
+                  setState(() => _repeatDays = days);
+                },
+                onRepeatCountChanged: (count) {
+                  setState(() => _repeatCount = count);
+                },
+              ),
+              const SizedBox(height: 22),
+
+              // 4. 하루 목표 횟수 설정 카드 (실천량 지정)
+              _buildSectionHeader(
+                icon: Icons.flag_rounded,
+                title: '목표 횟수 (선택)',
+                subtitle: '기본 1일 1회 체크',
+              ),
+              HabitTargetCountCard(
+                habitType: _habitType,
+                targetCount: _targetCount,
+                unitController: _unitController,
+                suggestedUnits: _suggestedUnits,
+                onHabitTypeToggled: (enabled) {
+                  setState(() {
+                    _habitType = enabled ? HabitType.count : HabitType.check;
+                    if (enabled && _targetCount <= 1) {
+                      _targetCount = 8;
+                      _unit = '잔';
+                      _unitController.text = '잔';
+                    }
+                  });
+                },
+                onTargetCountChanged: (count) {
+                  setState(() => _targetCount = count);
+                },
+                onUnitSelected: (u) {
+                  setState(() {
+                    _unit = u;
+                    _unitController.text = u;
+                  });
+                },
+                onHelpPressed: () => TargetCountHelpDialog.show(context),
+              ),
+              const SizedBox(height: 22),
+
+              // 5. 알림 설정 카드 (실천 규칙 수립 후 마지막 지원 도구로 배치)
+              _buildSectionHeader(
+                icon: Icons.notifications_active_rounded,
+                title: '알림 설정',
+                subtitle: '스마트폰이 잊지 않게 알려드려요',
+              ),
+              HabitReminderCard(
+                reminderEnabled: _reminderEnabled,
+                reminderType: _reminderType,
+                reminderTimes: _reminderTimes,
+                reminderIntervalMinutes: _reminderIntervalMinutes,
+                reminderStartTime: _reminderStartTime,
+                reminderEndTime: _reminderEndTime,
+                suggestedIntervals: _suggestedIntervals,
+                habitType: _habitType,
+                targetCount: _targetCount,
+                habitTitle: _titleController.text,
+                reminderSubtitle: _getReminderSubtitle(),
+                onReminderEnabledChanged: (val) {
+                  setState(() => _reminderEnabled = val);
+                },
+                onReminderTypeChanged: (type) {
+                  setState(() => _reminderType = type);
+                },
+                onEditFixedTime: _editFixedTime,
+                onRemoveFixedTime: _removeFixedTime,
+                onAddFixedTime: _addFixedTime,
+                onIntervalMinutesChanged: (mins) {
+                  setState(() => _reminderIntervalMinutes = mins);
+                },
+                isNightExcluded: _isNightExcluded,
+                onNightExcludedChanged: _onNightExcludedChanged,
+                onSelectStartTime: _selectStartTime,
+                onSelectEndTime: _selectEndTime,
+                onSyncTargetCount: () {
+                  setState(() => _targetCount = _reminderTimes.length);
+                },
+              ),
+              const SizedBox(height: 32),
+
+              // 6. 하단 저장 버튼 (초프리미엄 56px 대형 와이드 버튼)
+              GestureDetector(
+                onTap: _saveHabit,
+                child: Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, AppColors.primaryDark],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.4),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _isEditing
+                            ? Icons.check_circle_rounded
+                            : Icons.auto_awesome_rounded,
+                        color: Colors.white,
+                        size: 21,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _isEditing ? '변경사항 저장하기' : '✨ 3초 습관 시작하기',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 48),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeader({
-    required IconData icon,
-    required String title,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 16, color: AppColors.primaryLight),
-          const SizedBox(width: 6),
-          Text(
-            title,
-            style: TextStyle(
-              color: context.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 }

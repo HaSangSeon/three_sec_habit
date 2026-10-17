@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:three_sec_habit/models/habit.dart';
 
 void main() {
   setUpAll(() {
@@ -213,7 +214,7 @@ void main() {
     ).add(Duration(days: daysUntil));
 
     // 오늘이 해당 요일(daysUntil == 0)인데 이미 완료(isCompletedToday)했으므로 다음 주로 7일 연기!
-    if (daysUntil == 0 && (isCompletedToday || scheduledDate.isBefore(tuesday))) {
+    if (daysUntil == 0 && isCompletedToday) {
       scheduledDate = scheduledDate.add(const Duration(days: 7));
     }
 
@@ -281,6 +282,107 @@ void main() {
 
     // 500개 ID가 중복 없이 1:1로 고유해야 함
     expect(generatedIds.length, 500);
+  });
+
+  test('다중 지정 시간 알림: Habit.reminderTimes 쉼표 구분자 파싱 및 정렬 검증', () {
+    final habit1 = Habit(
+      title: '혈압약 복용',
+      reminderTime: '08:30,12:30,18:30',
+    );
+    expect(habit1.reminderTimes, ['08:30', '12:30', '18:30']);
+
+    final habit2 = Habit(
+      title: '단일 알림',
+      reminderTime: '08:00',
+    );
+    expect(habit2.reminderTimes, ['08:00']);
+
+    final habit3 = Habit(
+      title: '공백 포함',
+      reminderTime: ' 08:30 , 13:00 , 19:30 ',
+    );
+    expect(habit3.reminderTimes, ['08:30', '13:00', '19:30']);
+  });
+
+  test('다중 지정 시간 알림 (식후 3회): 3개 슬롯 시간 생성 및 고유 ID 검증', () {
+    final habit = Habit(
+      id: 5,
+      title: '식후 3회 복약',
+      reminderTime: '08:30,12:30,18:30',
+    );
+    final now = tz.TZDateTime.now(tz.local);
+    final slots = <tz.TZDateTime>[];
+    final ids = <int>{};
+
+    final times = habit.reminderTimes;
+    for (int timeIdx = 0; timeIdx < times.length; timeIdx++) {
+      final parts = times[timeIdx].split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+      if (scheduledDate.isBefore(now)) {
+        scheduledDate = scheduledDate.add(const Duration(days: 1));
+      }
+      slots.add(scheduledDate);
+
+      final notifId = (habit.id! * 1000 + timeIdx).abs() % 2147483647;
+      ids.add(notifId);
+    }
+
+    expect(slots.length, 3);
+    expect(ids.length, 3);
+    expect(ids, {5000, 5001, 5002});
+  });
+
+  test('특정 요일별 다중 지정 시간 알림 (월/수/금 x 3회 알림): 총 9개 독립 슬롯 생성 검증', () {
+    final habit = Habit(
+      id: 10,
+      title: '월수금 3회 복약',
+      repeatType: RepeatType.weeklyDays,
+      repeatDays: [1, 3, 5], // 월, 수, 금
+      reminderTime: '08:30,12:30,18:30',
+    );
+    final now = tz.TZDateTime.now(tz.local);
+    final slots = <tz.TZDateTime>[];
+    final ids = <int>{};
+
+    final times = habit.reminderTimes;
+    for (int timeIdx = 0; timeIdx < times.length; timeIdx++) {
+      final parts = times[timeIdx].split(':');
+      final hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      for (final day in habit.repeatDays) {
+        int daysUntil = (day - now.weekday) % 7;
+        if (daysUntil < 0) daysUntil += 7;
+
+        var scheduledDate = tz.TZDateTime(
+          tz.local,
+          now.year,
+          now.month,
+          now.day,
+          hour,
+          minute,
+        ).add(Duration(days: daysUntil));
+
+        if (daysUntil == 0 && scheduledDate.isBefore(now)) {
+          scheduledDate = scheduledDate.add(const Duration(days: 7));
+        }
+        slots.add(scheduledDate);
+
+        final notifId = (habit.id! * 1000 + (day * 10 + timeIdx)).abs() % 2147483647;
+        ids.add(notifId);
+      }
+    }
+
+    // 3개 요일 x 3개 시간 = 9개 슬롯 및 고유 ID
+    expect(slots.length, 9);
+    expect(ids.length, 9);
+    // 모든 ID는 10000 대역 내에서 800 미만의 subId를 가짐
+    for (final id in ids) {
+      expect(id >= 10000 && id < 10800, true);
+    }
   });
 }
 

@@ -168,13 +168,23 @@ class Habit {
     }
   }
 
+  /// 다중 지정 시간 리스트 (예: ['08:30', '12:30', '18:30'])
+  List<String> get reminderTimes {
+    if (reminderTime == null || reminderTime!.trim().isEmpty) return const [];
+    return reminderTime!
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && e.contains(':'))
+        .toList();
+  }
+
   /// 반복 주기 설명 텍스트
   String get repeatSummary {
     switch (repeatType) {
       case RepeatType.daily:
         return '매일';
       case RepeatType.weeklyDays:
-        if (repeatDays.length == 7) return '매일';
+        if (repeatDays.length == 7) return '매일(월~일)';
         if (repeatDays.length == 5 &&
             repeatDays.contains(1) &&
             repeatDays.contains(2) &&

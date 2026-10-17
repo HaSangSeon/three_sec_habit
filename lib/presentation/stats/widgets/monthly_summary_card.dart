@@ -50,36 +50,44 @@ class MonthlySummaryCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.accent.withValues(alpha: 0.25),
-                        width: 1,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.25),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.auto_graph_rounded,
+                        color: AppColors.accent,
+                        size: 16,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.auto_graph_rounded,
-                      color: AppColors.accent,
-                      size: 16,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '$month월 실천 리포트',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.textPrimary,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$month월 실천 리포트',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -127,12 +135,16 @@ class MonthlySummaryCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.check_circle_outline_rounded, size: 14, color: AppColors.successLight),
                           const SizedBox(width: 5),
-                          Text(
-                            '이달의 총 실천',
-                            style: TextStyle(
-                              color: context.textSecondary,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              '이달의 총 실천',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.textSecondary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -174,12 +186,16 @@ class MonthlySummaryCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.emoji_events_outlined, size: 14, color: AppColors.fireAmber),
                           const SizedBox(width: 5),
-                          Text(
-                            '이달의 성실왕',
-                            style: TextStyle(
-                              color: context.textSecondary,
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
+                          Flexible(
+                            child: Text(
+                              '이달의 성실왕',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.textSecondary,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],

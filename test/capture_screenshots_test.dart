@@ -313,4 +313,20 @@ void main() {
     await tester.pump();
     await saveScreenshot(tester, key, 'real_screen_4_edit.png');
   });
+
+  testWidgets('5. Capture Senior Habit New Screen', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      buildWrapper(
+        const HabitEditScreen(),
+        key,
+      ),
+    );
+    await tester.pump();
+    await saveScreenshot(tester, key, 'real_screen_5_senior_new.png');
+  });
 }

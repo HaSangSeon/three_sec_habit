@@ -180,9 +180,21 @@ class NotificationService {
 
     try {
       final title = habit.title;
-      final body = habit.habitType == HabitType.count
-          ? '💧 [$title] 실천할 시간이에요! 오늘의 목표(${habit.targetCount}${habit.unit})를 달성해보세요.'
-          : '⚡ [$title] 실천할 시간이에요! 3초 만에 완료해보세요.';
+      final isMedication = habit.title.contains('약') ||
+          habit.title.contains('비타민') ||
+          habit.title.contains('영양제') ||
+          habit.title.contains('유산균') ||
+          habit.iconName.contains('medication') ||
+          habit.iconName.contains('pill');
+
+      final String body;
+      if (isMedication) {
+        body = '💊 [$title] 잊지 말고 챙겨 드실 시간이에요! 건강을 위해 꼭 챙겨주세요.';
+      } else if (habit.habitType == HabitType.count) {
+        body = '💧 [$title] 실천할 시간이에요! 오늘의 목표(${habit.targetCount}${habit.unit})를 달성해보세요.';
+      } else {
+        body = '⚡ [$title] 실천할 시간이에요! 3초 만에 완료해보세요.';
+      }
 
       const notificationDetails = NotificationDetails(
         android: AndroidNotificationDetails(
@@ -203,22 +215,23 @@ class NotificationService {
       final now = tz.TZDateTime.now(tz.local);
       final isWeeklyDone = habit.repeatType == RepeatType.weeklyCount && isWeeklyCompleted;
 
-      if (habit.reminderType == ReminderType.fixed &&
-          habit.reminderTime != null) {
+      final times = habit.reminderTimes;
+      if (habit.reminderType == ReminderType.fixed && times.isNotEmpty) {
         // ==========================================
-        // 1. 지정 시각 알림 (오늘 완료 여부 및 요일별 다중 슬롯 스케줄링)
+        // 1. 다중 지정 시각 알림 (오늘 완료 여부 및 요일별 다중 슬롯 스케줄링)
         // ==========================================
-        final parts = habit.reminderTime!.split(':');
-        if (parts.length >= 2) {
+        final isDaily = habit.repeatType == RepeatType.daily ||
+            habit.repeatType == RepeatType.weeklyCount ||
+            habit.repeatDays.length == 7;
+
+        for (int timeIdx = 0; timeIdx < times.length; timeIdx++) {
+          final parts = times[timeIdx].split(':');
+          if (parts.length < 2) continue;
           final hour = int.tryParse(parts[0]) ?? 8;
           final minute = int.tryParse(parts[1]) ?? 0;
 
-          final isDaily = habit.repeatType == RepeatType.daily ||
-              habit.repeatType == RepeatType.weeklyCount ||
-              habit.repeatDays.length == 7;
-
           if (isDaily) {
-            // 매일 반복: DateTimeComponents.time으로 1회 등록
+            // 매일 반복: DateTimeComponents.time으로 등록
             var scheduledDate =
                 tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
 
@@ -230,7 +243,7 @@ class NotificationService {
               scheduledDate = scheduledDate.add(const Duration(days: 1));
             }
 
-            final notifId = _generateNotificationId(habit.id!, 0);
+            final notifId = _generateNotificationId(habit.id!, timeIdx);
             await _notificationsPlugin.zonedSchedule(
               id: notifId,
               title: title,
@@ -239,10 +252,10 @@ class NotificationService {
               notificationDetails: notificationDetails,
               androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
               matchDateTimeComponents: DateTimeComponents.time,
-              payload: 'habit_${habit.id}',
+              payload: 'habit_${habit.id}_t$timeIdx',
             );
           } else if (habit.repeatDays.isNotEmpty) {
-            // 요일별 반복: 선택된 모든 요일(예: 월~금 각각)에 대해 개별 등록!
+            // 요일별 반복: 선택된 모든 요일(예: 월~금 각각)에 대해 개별 지정 시각 등록
             for (final day in habit.repeatDays) {
               int daysUntil = (day - now.weekday) % 7;
               if (daysUntil < 0) daysUntil += 7;
@@ -261,7 +274,7 @@ class NotificationService {
                 scheduledDate = scheduledDate.add(const Duration(days: 7));
               }
 
-              final notifId = _generateNotificationId(habit.id!, day);
+              final notifId = _generateNotificationId(habit.id!, day * 10 + timeIdx);
               await _notificationsPlugin.zonedSchedule(
                 id: notifId,
                 title: title,
@@ -270,7 +283,7 @@ class NotificationService {
                 notificationDetails: notificationDetails,
                 androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
                 matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-                payload: 'habit_${habit.id}_day_$day',
+                payload: 'habit_${habit.id}_d${day}_t$timeIdx',
               );
             }
           }

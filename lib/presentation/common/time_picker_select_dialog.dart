@@ -138,11 +138,13 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
         borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: borderColor, width: 1.0),
       ),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // 1. 헤더 (아이콘 + 타이틀 + 닫기 버튼)
           Container(
             padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
@@ -222,17 +224,18 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
               children: [
                 // 2-1. 오전 / 오후 캡슐형 세그먼트 스위치
                 Container(
-                  height: 42,
-                  padding: const EdgeInsets.all(3),
+                  height: 46,
+                  padding: const EdgeInsets.all(3.5),
                   decoration: BoxDecoration(
                     color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(13),
                     border: Border.all(
                       color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                       width: 1,
                     ),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildAmPmTab(
                         label: '오전 (AM)',
@@ -442,14 +445,18 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
                 // 2-3. 빠른 선택 프리셋 칩
                 Row(
                   children: [
-                    Icon(Icons.bolt_rounded, size: 14, color: AppColors.primaryLight),
+                    const Icon(Icons.bolt_rounded, size: 14, color: AppColors.primaryLight),
                     const SizedBox(width: 4),
-                    Text(
-                      '빠른 프리셋 선택 (24시간 기준: $_formatted24h)',
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        '빠른 프리셋 선택 (24시간 기준: $_formatted24h)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.textMuted,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -563,21 +570,27 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
                           Navigator.pop(context, _currentTimeOfDay);
                         },
                         borderRadius: BorderRadius.circular(14),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.check_rounded, color: Colors.white, size: 18),
-                            SizedBox(width: 6),
-                            Text(
-                              '시간 설정 완료',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
-                              ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                                SizedBox(width: 6),
+                                Text(
+                                  '시간 설정 완료',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -588,6 +601,7 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -599,49 +613,84 @@ class _TimePickerSelectDialogState extends State<TimePickerSelectDialog> {
     required bool isDark,
     required VoidCallback onTap,
   }) {
+    final activeIconColor = icon == Icons.wb_sunny_rounded
+        ? const Color(0xFFF59E0B)
+        : AppColors.primaryLight;
+
     return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark ? const Color(0xFF1E293B) : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: double.infinity,
+            height: double.infinity,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (isDark ? const Color(0xFF334155) : Colors.white)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              border: isSelected
+                  ? Border.all(
+                      color: isDark
+                          ? const Color(0xFF475569)
+                          : const Color(0xFFCBD5E1).withValues(alpha: 0.6),
+                      width: 0.8,
+                    )
+                  : null,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.4)
+                            : const Color(0xFF0F172A).withValues(alpha: 0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1.5),
+                      ),
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 1,
+                          offset: const Offset(0, 0.5),
+                        ),
+                    ]
+                  : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 16,
+                      color: isSelected
+                          ? activeIconColor
+                          : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                     ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 15,
-                color: isSelected
-                    ? AppColors.primaryLight
-                    : context.textMuted,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? context.textPrimary
-                      : context.textMuted,
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                    const SizedBox(width: 7),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: isSelected
+                            ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                            : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                        fontSize: 13.5,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

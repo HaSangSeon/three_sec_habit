@@ -47,24 +47,32 @@ class OverallStreakBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.local_fire_department_rounded,
-                    color: AppColors.fireOrange,
-                    size: 24,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    '나의 습관 연속 기록',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: AppColors.fireOrange,
+                      size: 24,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '나의 습관 연속 기록',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               // 뱃지 보기 버튼
               GestureDetector(
                 onTap: () => AchievementBadgeSheet.show(
@@ -104,14 +112,15 @@ class OverallStreakBanner extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               // 현재 최고 연속
-              _buildStatMetric(
-                label: '현재 연속',
-                value: '$maxCurrentStreak일',
-                color: AppColors.fireOrange,
-                icon: Icons.bolt_rounded,
+              Expanded(
+                child: _buildStatMetric(
+                  label: '현재 연속',
+                  value: '$maxCurrentStreak일',
+                  color: AppColors.fireOrange,
+                  icon: Icons.bolt_rounded,
+                ),
               ),
               Container(
                 width: 1,
@@ -119,11 +128,13 @@ class OverallStreakBanner extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.18),
               ),
               // 역대 최장 기록
-              _buildStatMetric(
-                label: '최고 기록',
-                value: '$bestEverStreak일',
-                color: AppColors.fireAmber,
-                icon: Icons.emoji_events_rounded,
+              Expanded(
+                child: _buildStatMetric(
+                  label: '최고 기록',
+                  value: '$bestEverStreak일',
+                  color: AppColors.fireAmber,
+                  icon: Icons.emoji_events_rounded,
+                ),
               ),
               Container(
                 width: 1,
@@ -131,11 +142,13 @@ class OverallStreakBanner extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.18),
               ),
               // 총 달성 횟수
-              _buildStatMetric(
-                label: '누적 완료',
-                value: '$totalCompletions회',
-                color: AppColors.successLight,
-                icon: Icons.check_circle_rounded,
+              Expanded(
+                child: _buildStatMetric(
+                  label: '누적 완료',
+                  value: '$totalCompletions회',
+                  color: AppColors.successLight,
+                  icon: Icons.check_circle_rounded,
+                ),
               ),
             ],
           ),
@@ -185,29 +198,35 @@ class OverallStreakBanner extends StatelessWidget {
   }) {
     return Column(
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
           ),
         ),
       ],
