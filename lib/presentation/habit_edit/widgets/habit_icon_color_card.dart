@@ -77,36 +77,13 @@ class _HabitIconColorCardState extends State<HabitIconColorCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 상단: 아이콘 헤더 및 위아래 드래그 안내
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '아이콘 선택',
-                style: TextStyle(
-                  color: context.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.unfold_more_rounded,
-                    size: 14,
-                    color: AppColors.primaryLight,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '위아래로 밀어서 선택',
-                    style: TextStyle(
-                      color: AppColors.primaryLight,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            '아이콘 선택',
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 10),
 
@@ -183,36 +160,13 @@ class _HabitIconColorCardState extends State<HabitIconColorCard> {
           const SizedBox(height: 14),
 
           // 포인트 색상 헤더 및 가로 드래그 안내
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '포인트 색상',
-                style: TextStyle(
-                  color: context.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 14,
-                    color: AppColors.primaryLight,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '옆으로 밀어서 선택',
-                    style: TextStyle(
-                      color: AppColors.primaryLight,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          Text(
+            '포인트 색상',
+            style: TextStyle(
+              color: context.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 10),
 

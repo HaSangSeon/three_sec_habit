@@ -31,7 +31,6 @@ class HabitReminderCard extends StatelessWidget {
   final ValueChanged<bool> onNightExcludedChanged;
   final VoidCallback? onSelectStartTime;
   final VoidCallback? onSelectEndTime;
-  final VoidCallback onSyncTargetCount;
 
   const HabitReminderCard({
     super.key,
@@ -56,7 +55,6 @@ class HabitReminderCard extends StatelessWidget {
     required this.onNightExcludedChanged,
     this.onSelectStartTime,
     this.onSelectEndTime,
-    required this.onSyncTargetCount,
   });
 
   // ==========================================
@@ -231,11 +229,13 @@ class HabitReminderCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   reminderSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: reminderEnabled
                         ? AppColors.primaryLight
                         : context.textMuted,
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: reminderEnabled
                         ? FontWeight.w600
                         : FontWeight.w400,
@@ -454,26 +454,13 @@ class HabitReminderCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '설정된 알림 시간 (${reminderTimes.length}개)',
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    '시간을 누르면 변경됩니다',
-                    style: TextStyle(
-                      color: AppColors.primaryLight,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              Text(
+                '설정된 알림 시간 (${reminderTimes.length}개)',
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
 
@@ -488,15 +475,7 @@ class HabitReminderCard extends StatelessWidget {
                 final minuteStr = time.minute.toString().padLeft(2, '0');
                 final periodStr = isPm ? '오후' : '오전';
 
-                String orderTag = '${index + 1}차 알림';
-                if (reminderTimes.length == 3) {
-                  if (index == 0) orderTag = '아침 식후';
-                  if (index == 1) orderTag = '점심 식후';
-                  if (index == 2) orderTag = '저녁 식후';
-                } else if (reminderTimes.length == 2) {
-                  if (index == 0) orderTag = '아침';
-                  if (index == 1) orderTag = '저녁';
-                }
+                final orderTag = '${index + 1}차 알림';
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -513,130 +492,197 @@ class HabitReminderCard extends StatelessWidget {
                       },
                       child: Ink(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                            horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: context.isDarkMode
                               ? Colors.white.withValues(alpha: 0.05)
-                              : AppColors.primary.withValues(alpha: 0.04),
+                              : AppColors.primary.withValues(alpha: 0.035),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: AppColors.primary.withValues(
-                                alpha: context.isDarkMode ? 0.3 : 0.2),
+                                alpha: context.isDarkMode ? 0.3 : 0.18),
                             width: 1.2,
                           ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            // 순서 배지 및 디지털 시계
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withValues(alpha: 0.18),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    orderTag,
-                                    style: const TextStyle(
-                                      color: AppColors.primaryLight,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: (isPm
-                                            ? AppColors.fireOrange
-                                            : const Color(0xFF0284C7))
-                                        .withValues(alpha: 0.16),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    periodStr,
-                                    style: TextStyle(
-                                      color: isPm
-                                          ? AppColors.fireOrange
-                                          : const Color(0xFF38BDF8),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Row(
+                            // 순서 배지 및 디지털 시계 (작은 화면 대응 FittedBox)
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      hourStr,
-                                      style: TextStyle(
-                                        color: context.textPrimary,
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.5,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures()
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
+                                    // 1. 순서 태그 배지 (아침 식후 / 1차 알림 등)
+                                    Container(
+                                      height: 28,
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 3),
+                                          horizontal: 9),
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(
+                                            alpha: context.isDarkMode
+                                                ? 0.22
+                                                : 0.12),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: AppColors.primary.withValues(
+                                              alpha: context.isDarkMode
+                                                  ? 0.4
+                                                  : 0.25),
+                                          width: 1.0,
+                                        ),
+                                      ),
                                       child: Text(
-                                        ':',
-                                        style: TextStyle(
-                                          color: AppColors.primaryLight
-                                              .withValues(alpha: 0.8),
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.w900,
+                                        orderTag,
+                                        style: const TextStyle(
+                                          color: AppColors.primaryLight,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11.5,
+                                          letterSpacing: -0.2,
                                         ),
                                       ),
                                     ),
-                                    Text(
-                                      minuteStr,
-                                      style: TextStyle(
-                                        color: context.textPrimary,
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.5,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures()
-                                        ],
+                                    const SizedBox(width: 6),
+
+                                    // 2. 오전/오후 구분 배지 (크기 및 가독성 대폭 강화)
+                                    Container(
+                                      height: 28,
+                                      constraints: const BoxConstraints(
+                                          minWidth: 44),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8),
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: (isPm
+                                                ? AppColors.fireOrange
+                                                : const Color(0xFF0284C7))
+                                            .withValues(
+                                                alpha: context.isDarkMode
+                                                    ? 0.24
+                                                    : 0.14),
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: (isPm
+                                                  ? AppColors.fireOrange
+                                                  : const Color(0xFF0284C7))
+                                              .withValues(
+                                                  alpha: context.isDarkMode
+                                                      ? 0.45
+                                                      : 0.3),
+                                          width: 1.0,
+                                        ),
                                       ),
+                                      child: Text(
+                                        periodStr,
+                                        style: TextStyle(
+                                          color: isPm
+                                              ? AppColors.fireOrange
+                                              : (context.isDarkMode
+                                                  ? const Color(0xFF38BDF8)
+                                                  : const Color(0xFF0284C7)),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12.5,
+                                          letterSpacing: -0.2,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+
+                                    // 3. 디지털 시계 (시간:분)
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          hourStr,
+                                          style: TextStyle(
+                                            color: context.textPrimary,
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.5,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures()
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 2.5),
+                                          child: Text(
+                                            ':',
+                                            style: TextStyle(
+                                              color: AppColors.primaryLight
+                                                  .withValues(alpha: 0.75),
+                                              fontSize: 21,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          minuteStr,
+                                          style: TextStyle(
+                                            color: context.textPrimary,
+                                            fontSize: 25,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: -0.5,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures()
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
 
-                            // 변경 및 삭제 버튼
+                            // 4. 변경 및 삭제 액션 버튼 영역
                             Row(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
+                                // 변경 버튼
                                 Container(
+                                  height: 32,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
+                                      horizontal: 10),
+                                  alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       colors: [
                                         AppColors.primary,
                                         AppColors.primaryLight
                                       ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 1.5),
+                                      ),
+                                    ],
                                   ),
                                   child: const Row(
                                     mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Icon(
                                         Icons.access_time_rounded,
-                                        size: 13,
+                                        size: 13.5,
                                         color: Colors.white,
                                       ),
                                       SizedBox(width: 4),
@@ -646,6 +692,7 @@ class HabitReminderCard extends StatelessWidget {
                                           color: Colors.white,
                                           fontSize: 11.5,
                                           fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.2,
                                         ),
                                       ),
                                     ],
@@ -653,20 +700,30 @@ class HabitReminderCard extends StatelessWidget {
                                 ),
                                 if (reminderTimes.length > 1) ...[
                                   const SizedBox(width: 6),
+                                  // 삭제(X) 버튼
                                   Material(
                                     color: Colors.transparent,
                                     child: InkWell(
-                                      borderRadius: BorderRadius.circular(8),
-                                      onTap: () => onRemoveFixedTime(index),
+                                      borderRadius:
+                                          BorderRadius.circular(8),
+                                      onTap: () =>
+                                          onRemoveFixedTime(index),
                                       child: Container(
-                                        padding: const EdgeInsets.all(6),
+                                        width: 32,
+                                        height: 32,
+                                        alignment: Alignment.center,
                                         decoration: BoxDecoration(
                                           color: context.isDarkMode
-                                              ? Colors.white10
+                                              ? Colors.white.withValues(
+                                                  alpha: 0.08)
                                               : Colors.black.withValues(
-                                                  alpha: 0.05),
+                                                  alpha: 0.04),
                                           borderRadius:
                                               BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: context.surfaceBorder,
+                                            width: 1.0,
+                                          ),
                                         ),
                                         child: Icon(
                                           Icons.close_rounded,
@@ -704,77 +761,34 @@ class HabitReminderCard extends StatelessWidget {
                           width: 1.2,
                         ),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline_rounded,
-                            size: 18,
-                            color: AppColors.primaryLight,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline_rounded,
+                                size: 18,
+                                color: AppColors.primaryLight,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                '+ 알림 시간 추가하기 (최대 6개)',
+                                style: TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            '+ 알림 시간 추가하기 (최대 6개)',
-                            style: TextStyle(
-                              color: AppColors.primaryLight,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-
-              if (habitType == HabitType.count &&
-                  targetCount != reminderTimes.length) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.tips_and_updates_outlined,
-                          size: 16, color: AppColors.primaryLight),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '목표 횟수를 알림 개수(${reminderTimes.length}회)로 맞출까요?',
-                          style: TextStyle(
-                            color: context.textPrimary,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: onSyncTargetCount,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Text(
-                            '맞추기',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -974,8 +988,10 @@ class HabitReminderCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         isNightExcluded
-                            ? '밤 9시 ~ 아침 9시(수면 시간) 알림이 제외됩니다'
-                            : '새벽을 포함하여 24시간 동안 규칙적으로 울립니다',
+                            ? '밤 9시 ~ 아침 9시(수면 시간) 알림 제외'
+                            : '새벽을 포함하여 24시간 알림 발송',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: context.textMuted,
                           fontSize: 11.5,

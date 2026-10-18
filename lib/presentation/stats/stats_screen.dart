@@ -41,6 +41,8 @@ class _StatsScreenState extends State<StatsScreen>
 
   HabitDao get _dao => widget.habitDao ?? HabitDao();
 
+  HabitProvider? _habitProvider;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -49,6 +51,32 @@ class _StatsScreenState extends State<StatsScreen>
     super.initState();
     _loadAllStats();
     _loadDateDetails(_selectedDate);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    try {
+      final provider = Provider.of<HabitProvider>(context);
+      if (_habitProvider != provider) {
+        _habitProvider?.removeListener(_onHabitsChanged);
+        _habitProvider = provider;
+        _habitProvider?.addListener(_onHabitsChanged);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _habitProvider?.removeListener(_onHabitsChanged);
+    super.dispose();
+  }
+
+  void _onHabitsChanged() {
+    if (mounted) {
+      _loadAllStats();
+      _loadDateDetails(_selectedDate);
+    }
   }
 
   Future<void> _loadAllStats() async {
@@ -157,14 +185,22 @@ class _StatsScreenState extends State<StatsScreen>
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(66),
         child: Container(
           decoration: BoxDecoration(
             color: context.bg,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF0284C7).withValues(alpha: context.isDarkMode ? 0.14 : 0.05),
+                context.bg,
+              ],
+            ),
             border: Border(
               bottom: BorderSide(
-                color: context.surfaceBorder.withValues(alpha: 0.6),
-                width: 0.8,
+                color: const Color(0xFF0284C7).withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                width: 1.0,
               ),
             ),
           ),
@@ -174,38 +210,77 @@ class _StatsScreenState extends State<StatsScreen>
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피
+                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
-                          borderRadius: BorderRadius.circular(11),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF2563EB), Color(0xFF0284C7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF3B82F6).withValues(alpha: context.isDarkMode ? 0.4 : 0.2),
+                            color: Colors.white.withValues(alpha: 0.25),
                             width: 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0284C7).withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.bar_chart_rounded,
-                          color: Color(0xFF60A5FA),
+                          color: Colors.white,
                           size: 22,
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        '통계 & 기록',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20,
-                          letterSpacing: -0.6,
-                          height: 1.1,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '통계 & 기록',
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                              letterSpacing: -0.6,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0284C7).withValues(alpha: context.isDarkMode ? 0.22 : 0.10),
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: const Color(0xFF0284C7).withValues(alpha: context.isDarkMode ? 0.42 : 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '분석',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: context.isDarkMode ? const Color(0xFF38BDF8) : const Color(0xFF0284C7),
+                                letterSpacing: -0.2,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -218,17 +293,17 @@ class _StatsScreenState extends State<StatsScreen>
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),
@@ -250,17 +325,17 @@ class _StatsScreenState extends State<StatsScreen>
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),

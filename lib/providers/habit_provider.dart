@@ -259,11 +259,24 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
+  /// 오늘 기준 바탕화면 위젯 및 알림 스케줄 강제 동기화 (조회 날짜와 무관하게 위젯 무결성 보장)
+  Future<void> syncTodayWidgetAndNotification() async {
+    try {
+      final todayHabits =
+          await _habitDao.getHabitsWithStatusForDate(DateTime.now());
+      await HomeWidgetService.updateWidgetData(todayHabits);
+      await NotificationService.rescheduleAllHabits(todayHabits);
+    } catch (e) {
+      debugPrint('Error syncing today widget and notification: $e');
+    }
+  }
+
   /// 습관 추가
   Future<int> addHabit(Habit habit) async {
     final insertedId = await _habitDao.insertHabit(habit);
     final createdHabit = habit.copyWith(id: insertedId);
     await NotificationService.scheduleHabitReminder(createdHabit);
+    await syncTodayWidgetAndNotification();
     await loadHabits();
     return insertedId;
   }
@@ -287,6 +300,7 @@ class HabitProvider extends ChangeNotifier {
       await NotificationService.scheduleHabitReminder(habit);
     }
 
+    await syncTodayWidgetAndNotification();
     await loadHabits();
   }
 
@@ -294,6 +308,7 @@ class HabitProvider extends ChangeNotifier {
   Future<void> deleteHabit(int habitId) async {
     await NotificationService.cancelHabitReminder(habitId);
     await _habitDao.deleteHabit(habitId);
+    await syncTodayWidgetAndNotification();
     await loadHabits();
   }
 

@@ -309,9 +309,16 @@ class GrassHeatmapCalendar extends StatelessWidget {
                                       ),
                                     ),
                                     TextSpan(
-                                      text: completedHabits!
-                                          .map((h) => h['title'] as String? ?? '')
-                                          .join(' · '),
+                                      text: completedHabits!.map((h) {
+                                        final title = h['title'] as String? ?? '';
+                                        final isCount = h['habit_type'] == 'count';
+                                        final logCount = h['log_count'];
+                                        final unit = h['unit'] as String? ?? '회';
+                                        if (isCount && logCount != null) {
+                                          return '$title($logCount$unit)';
+                                        }
+                                        return title;
+                                      }).join(' · '),
                                       style: TextStyle(
                                         color: context.textPrimary,
                                         fontWeight: FontWeight.w600,

@@ -23,7 +23,7 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('설정'), findsOneWidget);
+    expect(find.text('환경 설정'), findsOneWidget);
     expect(find.text('테마 모드 선택'), findsOneWidget);
     expect(find.text('라이트'), findsOneWidget);
     expect(find.text('다크'), findsOneWidget);

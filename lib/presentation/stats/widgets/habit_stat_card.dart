@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_icons.dart';
+import '../../../models/habit.dart';
 import '../../../models/habit_with_today_status.dart';
 
 /// 습관별 스트릭 및 달성률 카드 위젯
@@ -58,7 +59,9 @@ class HabitStatCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      habit.repeatSummary,
+                      habit.habitType == HabitType.count
+                          ? '${habit.repeatSummary} · 목표 ${habit.targetCount}${habit.unit}'
+                          : habit.repeatSummary,
                       style: TextStyle(
                         color: context.textMuted,
                         fontSize: 12,

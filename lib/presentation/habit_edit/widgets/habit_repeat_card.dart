@@ -149,12 +149,14 @@ class HabitRepeatCard extends StatelessWidget {
                   const Icon(Icons.check_circle_rounded,
                       size: 15, color: Color(0xFF10B981)),
                   const SizedBox(width: 6),
-                  Text(
-                    '월요일부터 일요일까지 매일 꾸준히 실천해요.',
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Text(
+                      '월요일부터 일요일까지 매일 꾸준히 실천해요.',
+                      style: TextStyle(
+                        color: context.textSecondary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -170,12 +172,14 @@ class HabitRepeatCard extends StatelessWidget {
                   const Icon(Icons.event_available_rounded,
                       size: 15, color: AppColors.primaryLight),
                   const SizedBox(width: 6),
-                  Text(
-                    '실천 요일 선택 (${_getRepeatDaysSummary()})',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Text(
+                      '실천 요일 선택 (${_getRepeatDaysSummary()})',
+                      style: TextStyle(
+                        color: context.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -263,14 +267,17 @@ class HabitRepeatCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '일주일에 몇 번 실천할까요?',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Text(
+                          '일주일에 몇 번 실천할까요?',
+                          style: TextStyle(
+                            color: context.textPrimary,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Row(
                         children: [
                           GestureDetector(

@@ -158,14 +158,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
   }
 
   String _getReminderSubtitle() {
-    if (!_reminderEnabled) return '알림 미사용 (필요할 때 켜세요)';
-
-    final periodStr = switch (_repeatType) {
-      RepeatType.daily => '매일',
-      RepeatType.weeklyDays =>
-        _repeatDays.length == 7 ? '매일 (월~일)' : '선택한 요일마다',
-      RepeatType.weeklyCount => '주 $_repeatCount회 달성 전까지',
-    };
+    if (!_reminderEnabled) return '알림 미사용';
 
     if (_reminderType == ReminderType.fixed) {
       if (_reminderTimes.isNotEmpty) {
@@ -174,20 +167,20 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
           final isPm = t.hour >= 12;
           final h = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
           final mStr = t.minute > 0 ? '${t.minute}분' : '정각';
-          return '$periodStr ${isPm ? "오후" : "오전"} $h시 $mStr 알림';
+          return '${isPm ? "오후" : "오전"} $h시 $mStr 알림';
         } else {
-          return '$periodStr 하루 ${_reminderTimes.length}회 지정 시각 알림';
+          return '하루 ${_reminderTimes.length}회 지정 시각 알림';
         }
       }
-      return '$periodStr 지정 시간 알림';
+      return '지정 시간 알림';
     } else {
       final intervalStr = _reminderIntervalMinutes < 60
           ? '$_reminderIntervalMinutes분'
           : '${_reminderIntervalMinutes ~/ 60}시간';
       if (_isNightExcluded) {
-        return '매일 $intervalStr 간격 (새벽 제외)';
+        return '$intervalStr 간격 (수면 제외)';
       } else {
-        return '매일 $intervalStr 간격 (24시간 연속)';
+        return '$intervalStr 간격 (24시간)';
       }
     }
   }
@@ -643,92 +636,149 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
 
     return Scaffold(
       backgroundColor: context.bg,
-      appBar: AppBar(
-        backgroundColor: context.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        titleSpacing: 16,
-        title: Row(
-          children: [
-            // 뒤로가기 버튼 (다른 화면과 조화로운 38x38 규격)
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: context.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.surfaceBorder, width: 1.0),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(66),
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.bg,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                currentColor.withValues(alpha: context.isDarkMode ? 0.14 : 0.05),
+                context.bg,
+              ],
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: currentColor.withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                width: 1.0,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 뒤로가기 버튼 (38x38 squircle)
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 16,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              currentColor,
+                              Color.lerp(currentColor, Colors.black, context.isDarkMode ? 0.15 : 0.1) ?? currentColor,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: currentColor.withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          AppIcons.getIcon(_selectedIconKey),
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            _isEditing ? '습관 수정' : '습관 등록',
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 19.5,
+                              letterSpacing: -0.6,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: currentColor.withValues(alpha: context.isDarkMode ? 0.22 : 0.10),
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: currentColor.withValues(alpha: context.isDarkMode ? 0.42 : 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              _isEditing ? '편집' : '신규',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: context.isDarkMode
+                                    ? Color.lerp(currentColor, Colors.white, 0.4)
+                                    : currentColor,
+                                letterSpacing: -0.2,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 16,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
 
-            // 그라데이션 타이틀 배지
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _isEditing ? '습관 편집' : '새 습관',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
+                  const Spacer(),
 
-            Text(
-              _isEditing ? '설정 변경' : '만들기',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 18.5,
-                letterSpacing: -0.4,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 다크/라이트 모드 전환 버튼 (다른 화면과 통일된 38x38 규격)
-                Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, child) {
-                    return Tooltip(
-                      message: themeProvider.isDarkMode ? '라이트 모드 전환' : '다크 모드 전환',
-                      child: GestureDetector(
+                  // 다크/라이트 모드 전환 버튼 (38x38 squircle)
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, child) {
+                      return GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
                           try {
@@ -740,17 +790,17 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
                             color: context.surface,
+                            borderRadius: BorderRadius.circular(11),
                             border: Border.all(
-                              color: context.surfaceBorder,
+                              color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                               width: 1.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
+                                color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1.5),
                               ),
                             ],
                           ),
@@ -764,25 +814,22 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                                 : context.textSecondary,
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
 
-                // 삭제 버튼 (수정 모드일 때만 표시, 다른 화면과 통일된 38x38 규격)
-                if (_isEditing) ...[
-                  const SizedBox(width: 8),
-                  Tooltip(
-                    message: '습관 삭제',
-                    child: GestureDetector(
+                  // 삭제 버튼 (수정 모드일 때만 표시, 38x38 squircle)
+                  if (_isEditing) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
                       behavior: HitTestBehavior.opaque,
                       onTap: _deleteHabit,
                       child: Container(
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
                           color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.18 : 0.08),
+                          borderRadius: BorderRadius.circular(11),
                           border: Border.all(
                             color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.35 : 0.2),
                             width: 1.0,
@@ -790,8 +837,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFFEF4444).withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1.5),
                             ),
                           ],
                         ),
@@ -802,17 +849,10 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: context.surfaceBorder,
-            height: 1.0,
           ),
         ),
       ),
@@ -833,7 +873,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               _buildSectionHeader(
                 icon: Icons.edit_note_rounded,
                 title: '습관 이름',
-                subtitle: '무엇을 실천하시나요?',
               ),
               HabitTitleCard(
                 titleController: _titleController,
@@ -846,7 +885,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               _buildSectionHeader(
                 icon: Icons.palette_rounded,
                 title: '아이콘 및 색상',
-                subtitle: '원하는 색상과 아이콘을 골라보세요',
               ),
               HabitIconColorCard(
                 selectedIconKey: _selectedIconKey,
@@ -864,7 +902,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               _buildSectionHeader(
                 icon: Icons.calendar_month_rounded,
                 title: '반복 주기',
-                subtitle: '언제 실천하시나요?',
               ),
               HabitRepeatCard(
                 repeatType: _repeatType,
@@ -893,7 +930,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               _buildSectionHeader(
                 icon: Icons.flag_rounded,
                 title: '목표 횟수 (선택)',
-                subtitle: '기본 1일 1회 체크',
               ),
               HabitTargetCountCard(
                 habitType: _habitType,
@@ -927,7 +963,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               _buildSectionHeader(
                 icon: Icons.notifications_active_rounded,
                 title: '알림 설정',
-                subtitle: '스마트폰이 잊지 않게 알려드려요',
               ),
               HabitReminderCard(
                 reminderEnabled: _reminderEnabled,
@@ -957,9 +992,6 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                 onNightExcludedChanged: _onNightExcludedChanged,
                 onSelectStartTime: _selectStartTime,
                 onSelectEndTime: _selectEndTime,
-                onSyncTargetCount: () {
-                  setState(() => _targetCount = _reminderTimes.length);
-                },
               ),
               const SizedBox(height: 32),
 

@@ -33,8 +33,9 @@ Future<void> backgroundCallback(Uri? uri) async {
         if (habit != null && habit.habitType == HabitType.count) {
           final log = await dao.getHabitLogForDate(habitId, todayStr);
           final currentCount = log?.count ?? 0;
-          final nextCount =
-              currentCount >= habit.targetCount ? 0 : currentCount + 1;
+          final nextCount = currentCount >= habit.targetCount
+              ? (habit.targetCount > 1 ? habit.targetCount - 1 : 0)
+              : currentCount + 1;
           await dao.setHabitCount(
             habitId: habitId,
             date: todayStr,

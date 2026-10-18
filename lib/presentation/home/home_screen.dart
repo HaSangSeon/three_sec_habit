@@ -203,8 +203,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     required String label,
   }) {
     final isSelected = _currentTabIndex == index;
-    final activeColor = context.isDarkMode ? const Color(0xFFA78BFA) : AppColors.primary;
-    final activeTextColor = context.isDarkMode ? const Color(0xFFDDD6FE) : AppColors.primaryDark;
+    final Color tabThemeColor = index == 0
+        ? AppColors.primary
+        : index == 1
+            ? const Color(0xFF0284C7)
+            : const Color(0xFF10B981);
+    final activeColor = context.isDarkMode
+        ? (index == 0
+            ? const Color(0xFFA78BFA)
+            : index == 1
+                ? const Color(0xFF38BDF8)
+                : const Color(0xFF34D399))
+        : tabThemeColor;
+    final activeTextColor = context.isDarkMode
+        ? (index == 0
+            ? const Color(0xFFDDD6FE)
+            : index == 1
+                ? const Color(0xFFBAE6FD)
+                : const Color(0xFFA7F3D0))
+        : tabThemeColor;
     final inactiveColor = context.textMuted;
 
     return Expanded(
@@ -216,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               setState(() => _currentTabIndex = index);
             }
           },
-          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          splashColor: tabThemeColor.withValues(alpha: 0.1),
           highlightColor: Colors.transparent,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -228,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
+                      ? tabThemeColor.withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -266,14 +283,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(66),
         child: Container(
           decoration: BoxDecoration(
             color: context.bg,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF8B5CF6).withValues(alpha: context.isDarkMode ? 0.14 : 0.05),
+                context.bg,
+              ],
+            ),
             border: Border(
               bottom: BorderSide(
-                color: context.surfaceBorder.withValues(alpha: 0.6),
-                width: 0.8,
+                color: const Color(0xFF8B5CF6).withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                width: 1.0,
               ),
             ),
           ),
@@ -283,25 +308,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피
+                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
-                          borderRadius: BorderRadius.circular(11),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.4 : 0.2),
+                            color: Colors.white.withValues(alpha: 0.25),
                             width: 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.bolt_rounded,
-                          color: AppColors.primaryLight,
+                          color: Colors.white,
                           size: 22,
                         ),
                       ),
@@ -310,10 +346,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         '3초 습관',
                         style: TextStyle(
                           color: context.textPrimary,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w900,
                           fontSize: 20,
                           letterSpacing: -0.6,
-                          height: 1.1,
+                          height: 1.15,
                         ),
                       ),
                     ],
@@ -327,17 +363,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),
@@ -367,17 +403,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),
@@ -397,17 +433,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),

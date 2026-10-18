@@ -25,7 +25,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('새 습관'), findsOneWidget);
+    expect(find.text('습관 등록'), findsOneWidget);
     expect(find.text('습관 이름'), findsOneWidget);
     expect(find.text('목표 횟수 (선택)'), findsOneWidget);
     expect(find.text('아이콘 및 색상'), findsOneWidget);

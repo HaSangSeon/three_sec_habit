@@ -177,9 +177,7 @@ class _HabitCardItemState extends State<HabitCardItem>
         color: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            children: [
-              Row(
+          child: Row(
                 children: [
                   // 1. 좌측 습관 정보 영역 (탭 시 편집/상세 진입)
                   Expanded(
@@ -423,17 +421,15 @@ class _HabitCardItemState extends State<HabitCardItem>
                                       : (context.isDarkMode
                                           ? AppColors.darkBackground
                                           : AppColors.lightBackground),
-                              border: Border.all(
-                                color: isDone
-                                    ? AppColors.success
-                                    : isRestDay
-                                        ? context.surfaceBorder
-                                            .withValues(alpha: 0.6)
-                                        : isCountType
-                                            ? habitColor.withValues(alpha: 0.6)
-                                            : habitColor.withValues(alpha: 0.35),
-                                width: isDone ? 0 : 2.0,
-                              ),
+                              border: (isDone || (isCountType && !isRestDay))
+                                  ? null
+                                  : Border.all(
+                                      color: isRestDay
+                                          ? context.surfaceBorder
+                                              .withValues(alpha: 0.6)
+                                          : habitColor.withValues(alpha: 0.35),
+                                      width: 2.0,
+                                    ),
                               boxShadow: [
                                 if (isDone)
                                   BoxShadow(
@@ -464,28 +460,69 @@ class _HabitCardItemState extends State<HabitCardItem>
                                             size: 22,
                                           )
                                         : isCountType
-                                            ? Column(
-                                                key: ValueKey('count_$todayCount'),
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    '$todayCount',
-                                                    style: TextStyle(
-                                                      color: habitColor,
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w900,
+                                            ? SizedBox(
+                                                key: ValueKey('count_ring_$todayCount'),
+                                                width: 50,
+                                                height: 50,
+                                                child: Stack(
+                                                  alignment: Alignment.center,
+                                                  children: [
+                                                    // 원형 프로그레스 링 게이지
+                                                    SizedBox(
+                                                      width: 46,
+                                                      height: 46,
+                                                      child: TweenAnimationBuilder<double>(
+                                                        tween: Tween<double>(
+                                                          begin: 0.0,
+                                                          end: progress.clamp(0.0, 1.0),
+                                                        ),
+                                                        duration: const Duration(
+                                                            milliseconds: 250),
+                                                        curve: Curves.easeOutCubic,
+                                                        builder: (context, val, _) =>
+                                                            CircularProgressIndicator(
+                                                          value: val,
+                                                          strokeWidth: 3.2,
+                                                          strokeCap: StrokeCap.round,
+                                                          backgroundColor: habitColor
+                                                              .withValues(alpha: 0.18),
+                                                          valueColor:
+                                                              AlwaysStoppedAnimation<Color>(
+                                                            habitColor,
+                                                          ),
+                                                        ),
+                                                      ),
                                                     ),
-                                                  ),
-                                                  Text(
-                                                    '+1',
-                                                    style: TextStyle(
-                                                      color: context.textMuted,
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w700,
+                                                    // 카운트 숫자 & +1
+                                                    Column(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment.center,
+                                                      children: [
+                                                        Text(
+                                                          '$todayCount',
+                                                          style: TextStyle(
+                                                            color: habitColor,
+                                                            fontSize: 15,
+                                                            fontWeight:
+                                                                FontWeight.w900,
+                                                            height: 1.05,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 1),
+                                                        Text(
+                                                          '+1',
+                                                          style: TextStyle(
+                                                            color: context.textMuted,
+                                                            fontSize: 9,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            height: 1.0,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               )
                                             : Icon(
                                                 Icons.check_rounded,
@@ -502,42 +539,8 @@ class _HabitCardItemState extends State<HabitCardItem>
                   ),
                 ],
               ),
-
-              // 카운트형 습관 진행 바
-              if (isCountType) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 7,
-                          backgroundColor:
-                              habitColor.withValues(alpha: 0.15),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            isDone ? AppColors.success : habitColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      '$todayCount / $targetCount ${habit.unit}',
-                      style: TextStyle(
-                        color: isDone ? AppColors.success : habitColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

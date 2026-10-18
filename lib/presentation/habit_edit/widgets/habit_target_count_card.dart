@@ -78,12 +78,16 @@ class HabitTargetCountCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            '하루 목표 횟수 설정',
-                            style: TextStyle(
-                              color: context.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                          Flexible(
+                            child: Text(
+                              '하루 목표 횟수 설정',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: context.textPrimary,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -110,6 +114,8 @@ class HabitTargetCountCard extends StatelessWidget {
                         isCount
                             ? '하루 목표 $targetCount${unitController.text} 누적 완료'
                             : '기본 1일 1회 체크 (비활성)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: isCount
                               ? AppColors.primaryLight
@@ -141,12 +147,16 @@ class HabitTargetCountCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '하루 목표 수치',
-                        style: TextStyle(
-                          color: context.textSecondary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          '하루 목표 수치',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       Row(

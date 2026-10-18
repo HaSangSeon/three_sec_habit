@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/backup_service.dart';
@@ -6,7 +7,6 @@ import '../../core/services/home_widget_service.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../common/help_guide_dialog.dart';
-import 'widgets/battery_optimization_dialog.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'widgets/widget_preview_pin_dialog.dart';
 
@@ -19,9 +19,26 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  String _appVersion = 'v1.0.6';
+
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          final build = info.buildNumber.isNotEmpty ? ' (Build ${info.buildNumber})' : '';
+          _appVersion = 'v${info.version}$build';
+        });
+      }
+    } catch (_) {
+      // Platform channel 실패 또는 테스트 환경 시 기본값 유지
+    }
   }
 
   Widget _buildSectionHeader(String title, IconData icon, BuildContext context) {
@@ -56,14 +73,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: context.bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(64),
+        preferredSize: const Size.fromHeight(66),
         child: Container(
           decoration: BoxDecoration(
             color: context.bg,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                const Color(0xFF10B981).withValues(alpha: context.isDarkMode ? 0.14 : 0.05),
+                context.bg,
+              ],
+            ),
             border: Border(
               bottom: BorderSide(
-                color: context.surfaceBorder.withValues(alpha: 0.6),
-                width: 0.8,
+                color: const Color(0xFF10B981).withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
+                width: 1.0,
               ),
             ),
           ),
@@ -73,38 +98,77 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피
+                  // 앱 타이틀 — 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.22 : 0.12),
-                          borderRadius: BorderRadius.circular(11),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0D9488), Color(0xFF10B981)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.4 : 0.2),
+                            color: Colors.white.withValues(alpha: 0.25),
                             width: 1.0,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.tune_rounded,
-                          color: AppColors.primaryLight,
+                          color: Colors.white,
                           size: 22,
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Text(
-                        '설정',
-                        style: TextStyle(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 20,
-                          letterSpacing: -0.6,
-                          height: 1.1,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '환경 설정',
+                            style: TextStyle(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 20,
+                              letterSpacing: -0.6,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: context.isDarkMode ? 0.22 : 0.10),
+                              borderRadius: BorderRadius.circular(7),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: context.isDarkMode ? 0.42 : 0.25),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              '시스템',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: context.isDarkMode ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                letterSpacing: -0.2,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -117,17 +181,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
                         color: context.surface,
+                        borderRadius: BorderRadius.circular(11),
                         border: Border.all(
-                          color: context.surfaceBorder,
+                          color: context.surfaceBorder.withValues(alpha: context.isDarkMode ? 0.8 : 0.6),
                           width: 1.0,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.25 : 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1.5),
                           ),
                         ],
                       ),
@@ -445,7 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'v1.0.0 (Build 5)',
+                            _appVersion,
                             style: TextStyle(
                               color: context.textMuted,
                               fontSize: 12,
@@ -482,32 +546,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Center(
-            child: InkWell(
-              onTap: () => BatteryOptimizationDialog.show(context),
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.info_outline_rounded, size: 13, color: context.textMuted),
-                    const SizedBox(width: 5),
-                    Text(
-                      '알림이 늦게 오거나 안 오시나요? (기기별 수신 팁)',
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -698,7 +736,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     } else {
-      WidgetPreviewPinDialog.show(context, initialIs4x2: is4x2, onPinWidget: _handlePinWidget);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            '런처 환경에 따라 원클릭 추가가 제한될 수 있습니다.\n홈 화면 빈 공간을 길게 눌러 [위젯] 메뉴에서 직접 추가해 주세요.',
+          ),
+          backgroundColor: const Color(0xFF475569),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: '방법 보기',
+            textColor: AppColors.primaryLight,
+            onPressed: () {
+              WidgetPreviewPinDialog.show(
+                context,
+                initialIs4x2: is4x2,
+                onPinWidget: _handlePinWidget,
+              );
+            },
+          ),
+        ),
+      );
     }
   }
 

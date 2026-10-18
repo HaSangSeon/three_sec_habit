@@ -33,6 +33,7 @@ class WidgetPreviewPinDialog extends StatefulWidget {
 class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
   late bool _is4x2;
   bool _showManualGuide = false;
+  bool? _previewDarkMode; // null이면 현재 앱의 context.isDarkMode를 실시간 반영
 
   @override
   void initState() {
@@ -94,24 +95,35 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
   }
 
   Widget _buildRealisticWidgetMockup({required bool is4x2}) {
+    final isDark = _previewDarkMode ?? context.isDarkMode;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF131722),
-            Color(0xFF1E1B2E),
-            Color(0xFF0F1218),
-          ],
+        gradient: LinearGradient(
+          colors: isDark
+              ? const [
+                  Color(0xFF131722),
+                  Color(0xFF1E1B2E),
+                  Color(0xFF0F1218),
+                ]
+              : const [
+                  Color(0xFFF1F5F9),
+                  Color(0xFFEDE9FE),
+                  Color(0xFFE2E8F0),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2D3344), width: 1.2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2D3344) : const Color(0xFFCBD5E1),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -131,50 +143,95 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                 ),
               ),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 child: Text(
                   '스마트폰 홈 화면 실제 설치 모습',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
-                is4x2 ? '가로 4칸 × 세로 2칸' : '가로 2칸 × 세로 2칸',
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+              // 라이트/다크 미니 전환 칩
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _previewDarkMode = !isDark;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.15)
+                          : const Color(0xFFCBD5E1),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                        size: 11,
+                        color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isDark ? '다크 위젯' : '라이트 위젯',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (is4x2)
-            _buildRealistic4x2WidgetMockup()
+            _buildRealistic4x2WidgetMockup(isDark: isDark)
           else
-            _buildRealistic2x2WidgetMockup(),
+            _buildRealistic2x2WidgetMockup(isDark: isDark),
         ],
       ),
     );
   }
 
-  Widget _buildRealistic4x2WidgetMockup() {
+  Widget _buildRealistic4x2WidgetMockup({required bool isDark}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C202B),
+        color: isDark ? const Color(0xFF1C202B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2E3446), width: 1),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E3446) : const Color(0xFFE2E8F0),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -185,13 +242,13 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   '⚡ 3초 습관 · 오늘 루틴',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: AppColors.primaryLight,
+                    color: isDark ? AppColors.primaryLight : const Color(0xFF7C3AED),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
                   ),
@@ -201,14 +258,20 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                  color: isDark
+                      ? const Color(0xFF22C55E).withValues(alpha: 0.15)
+                      : const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+                        : const Color(0xFFA7F3D0),
+                  ),
                 ),
-                child: const Text(
+                child: Text(
                   '2 / 3 완료 (67%)',
                   style: TextStyle(
-                    color: Color(0xFF22C55E),
+                    color: isDark ? const Color(0xFF22C55E) : const Color(0xFF059669),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -219,17 +282,18 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
           const SizedBox(height: 8),
           Container(
             height: 1,
-            color: const Color(0xFF292E3D),
+            color: isDark ? const Color(0xFF292E3D) : const Color(0xFFF1F5F9),
           ),
           const SizedBox(height: 8),
           _buildMockupHabitRow(
             title: '아침 미온수 한 잔 마시기',
             isCompleted: true,
+            isDark: isDark,
             trailing: Container(
               width: 22,
               height: 22,
-              decoration: const BoxDecoration(
-                color: Color(0xFF22C55E),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF22C55E) : const Color(0xFF059669),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
@@ -239,20 +303,27 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
           _buildMockupHabitRow(
             title: '물 8잔 마시기',
             isCompleted: false,
+            isDark: isDark,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.18),
+                    color: isDark
+                        ? AppColors.primary.withValues(alpha: 0.18)
+                        : const Color(0xFF7C3AED).withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.primaryLight.withValues(alpha: 0.3)
+                          : const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '5 / 8잔',
                     style: TextStyle(
-                      color: AppColors.primaryLight,
+                      color: isDark ? AppColors.primaryLight : const Color(0xFF7C3AED),
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
@@ -262,7 +333,7 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: isDark ? AppColors.primary : const Color(0xFF7C3AED),
                     borderRadius: BorderRadius.circular(7),
                   ),
                   child: const Text(
@@ -281,12 +352,16 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
           _buildMockupHabitRow(
             title: '하루 30분 유산소 운동',
             isCompleted: false,
+            isDark: isDark,
             trailing: Container(
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF94A3B8), width: 1.5),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFFCBD5E1),
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -298,14 +373,18 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
   Widget _buildMockupHabitRow({
     required String title,
     required bool isCompleted,
+    required bool isDark,
     required Widget trailing,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFF232836),
+        color: isDark ? const Color(0xFF232836) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2E3446), width: 0.8),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E3446) : const Color(0xFFE2E8F0),
+          width: 0.8,
+        ),
       ),
       child: Row(
         children: [
@@ -315,7 +394,9 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isCompleted ? const Color(0xFF94A3B8) : const Color(0xFFF1F5F9),
+                color: isCompleted
+                    ? const Color(0xFF94A3B8)
+                    : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF0F172A)),
                 fontSize: 12,
                 fontWeight: isCompleted ? FontWeight.w500 : FontWeight.w600,
                 decoration: isCompleted ? TextDecoration.lineThrough : null,
@@ -330,18 +411,21 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
     );
   }
 
-  Widget _buildRealistic2x2WidgetMockup() {
+  Widget _buildRealistic2x2WidgetMockup({required bool isDark}) {
     return Center(
       child: Container(
         width: 190,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1C202B),
+          color: isDark ? const Color(0xFF1C202B) : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFF2E3446), width: 1),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2E3446) : const Color(0xFFE2E8F0),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.06),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -350,31 +434,31 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Row(
+            Row(
               children: [
                 Text(
                   '⚡ 3초 습관',
                   style: TextStyle(
-                    color: AppColors.primaryLight,
+                    color: isDark ? AppColors.primaryLight : const Color(0xFF7C3AED),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 Text(
                   '오늘',
                   style: TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     fontSize: 10.5,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '2 / 3',
               style: TextStyle(
-                color: Colors.white,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.5,
@@ -384,14 +468,20 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                color: isDark
+                    ? const Color(0xFF22C55E).withValues(alpha: 0.15)
+                    : const Color(0xFFECFDF5),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF22C55E).withValues(alpha: 0.4)
+                      : const Color(0xFFA7F3D0),
+                ),
               ),
-              child: const Text(
+              child: Text(
                 '67% 달성',
                 style: TextStyle(
-                  color: Color(0xFF22C55E),
+                  color: isDark ? const Color(0xFF22C55E) : const Color(0xFF059669),
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -401,20 +491,23 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
               decoration: BoxDecoration(
-                color: const Color(0xFF232836),
+                color: isDark ? const Color(0xFF232836) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2E3446), width: 0.8),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2E3446) : const Color(0xFFE2E8F0),
+                  width: 0.8,
+                ),
               ),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           '1순위 빠른 체크',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                             fontSize: 9.5,
                             fontWeight: FontWeight.w500,
                           ),
@@ -424,7 +517,7 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -438,7 +531,10 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                     height: 20,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primaryLight, width: 1.5),
+                      border: Border.all(
+                        color: isDark ? AppColors.primaryLight : const Color(0xFF7C3AED),
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ],

@@ -121,7 +121,6 @@ void main() {
                 onIntervalMinutesChanged: (_) {},
                 isNightExcluded: false,
                 onNightExcludedChanged: (_) {},
-                onSyncTargetCount: () {},
               ),
             ),
           ),
