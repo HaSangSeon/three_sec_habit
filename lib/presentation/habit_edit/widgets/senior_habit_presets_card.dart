@@ -246,7 +246,7 @@ class SeniorHabitPresetsCard extends StatelessWidget {
             },
             blendMode: BlendMode.dstIn,
             child: SizedBox(
-              height: 98,
+              height: 104,
               child: ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
                 scrollDirection: Axis.horizontal,
@@ -269,7 +269,7 @@ class SeniorHabitPresetsCard extends StatelessWidget {
                       },
                       child: Container(
                         width: 176,
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: presetColor.withValues(
                             alpha: context.isDarkMode ? 0.12 : 0.07,
@@ -282,82 +282,91 @@ class SeniorHabitPresetsCard extends StatelessWidget {
                             width: 1.1,
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topLeft,
+                          child: SizedBox(
+                            width: 152,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: presetColor.withValues(alpha: 0.22),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    AppIcons.getIcon(preset.iconKey),
-                                    color: presetColor,
-                                    size: 16,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.isDarkMode
-                                        ? Colors.white.withValues(alpha: 0.08)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    preset.badgeText,
-                                    style: TextStyle(
-                                      color: presetColor,
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: presetColor.withValues(alpha: 0.22),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        AppIcons.getIcon(preset.iconKey),
+                                        color: presetColor,
+                                        size: 16,
+                                      ),
                                     ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 5,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: context.isDarkMode
+                                            ? Colors.white.withValues(alpha: 0.08)
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        preset.badgeText,
+                                        style: TextStyle(
+                                          color: presetColor,
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  preset.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.3,
                                   ),
                                 ),
-                              ],
-                            ),
-                            Text(
-                              preset.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: context.textPrimary,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_filled_rounded,
-                                  size: 11,
-                                  color: context.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    preset.timeDescription,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time_filled_rounded,
+                                      size: 11,
                                       color: context.textSecondary,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        preset.timeDescription,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: context.textSecondary,
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),

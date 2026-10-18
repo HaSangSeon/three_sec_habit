@@ -6,19 +6,24 @@ import 'package:three_sec_habit/presentation/common/time_picker_select_dialog.da
 import 'package:three_sec_habit/presentation/habit_edit/habit_edit_screen.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_reminder_card.dart';
 import 'package:three_sec_habit/presentation/home/home_screen.dart';
+import 'package:three_sec_habit/presentation/home/widgets/habit_calendar_picker_dialog.dart';
 import 'package:three_sec_habit/presentation/settings/settings_screen.dart';
+import 'package:three_sec_habit/presentation/settings/widgets/widget_preview_pin_dialog.dart';
 import 'package:three_sec_habit/presentation/stats/stats_screen.dart';
 import 'package:three_sec_habit/providers/habit_provider.dart';
 import 'package:three_sec_habit/providers/theme_provider.dart';
 
 void main() {
   final testDevices = [
-    (name: 'Small Android (320x568)', size: const Size(320, 568)),
-    (name: 'Compact Android (360x640)', size: const Size(360, 640)),
-    (name: 'Standard Android (393x852)', size: const Size(393, 852)),
-    (name: 'Large Android (412x915)', size: const Size(412, 915)),
-    (name: 'Foldable / Tablet (600x960)', size: const Size(600, 960)),
-    (name: 'Large Tablet (800x1280)', size: const Size(800, 1280)),
+    (name: 'Small Android (320x568)', size: const Size(320, 568), textScale: 1.0),
+    (name: 'Compact Android (360x640)', size: const Size(360, 640), textScale: 1.0),
+    (name: 'Standard Android (393x852)', size: const Size(393, 852), textScale: 1.0),
+    (name: 'Large Android (412x915)', size: const Size(412, 915), textScale: 1.0),
+    (name: 'Foldable / Tablet (600x960)', size: const Size(600, 960), textScale: 1.0),
+    (name: 'Large Tablet (800x1280)', size: const Size(800, 1280), textScale: 1.0),
+    (name: 'Landscape Tablet (960x600)', size: const Size(960, 600), textScale: 1.0),
+    (name: 'Accessibility Large Font (360x640, 1.3x)', size: const Size(360, 640), textScale: 1.3),
+    (name: 'Accessibility Huge Font (393x852, 1.5x)', size: const Size(393, 852), textScale: 1.5),
   ];
 
   for (final device in testDevices) {
@@ -38,7 +43,15 @@ void main() {
         FlutterError.onError = (d) {
           caught = d;
         };
-        await tester.pumpWidget(widget);
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(
+              size: device.size,
+              textScaler: TextScaler.linear(device.textScale),
+            ),
+            child: widget,
+          ),
+        );
         await tester.pump();
         if (caught != null) {
           final nodes = caught!.informationCollector?.call().map((n) => n.toString()).join('\n') ?? '';
@@ -135,6 +148,30 @@ void main() {
             body: TimePickerSelectDialog(
               initialTime: const TimeOfDay(hour: 14, minute: 30),
               title: '알림 시간 설정',
+            ),
+          ),
+        ),
+      );
+
+      // 7. HabitCalendarPickerDialog
+      await checkWidget(
+        'HabitCalendarPickerDialog',
+        MaterialApp(
+          home: Scaffold(
+            body: HabitCalendarPickerDialog(
+              initialDate: DateTime.now(),
+            ),
+          ),
+        ),
+      );
+
+      // 8. WidgetPreviewPinDialog
+      await checkWidget(
+        'WidgetPreviewPinDialog',
+        MaterialApp(
+          home: Scaffold(
+            body: WidgetPreviewPinDialog(
+              onPinWidget: ({required bool is4x2}) async {},
             ),
           ),
         ),

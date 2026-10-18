@@ -144,6 +144,7 @@ class _HabitCardItemState extends State<HabitCardItem>
     final progress = widget.habitStatus.todayProgress;
 
     return Container(
+      constraints: const BoxConstraints(minHeight: 78),
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       decoration: BoxDecoration(
         color: isDone
@@ -244,111 +245,140 @@ class _HabitCardItemState extends State<HabitCardItem>
                                   ],
                                 ),
                                 const SizedBox(height: 5),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    // 반복 주기 태그
-                                    Text(
-                                      habit.repeatSummary,
-                                      style: TextStyle(
-                                        color: context.textMuted,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    // 카운트형 습관 목표 뱃지 (상단 태그에서도 즉시 확인 가능)
-                                    if (isCountType)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: isDone
-                                              ? AppColors.success.withValues(alpha: 0.14)
-                                              : habitColor.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '목표 $todayCount/$targetCount${habit.unit}',
-                                          style: TextStyle(
-                                            color: isDone ? AppColors.success : habitColor,
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    // 간격 알림 뱃지
-                                    if (habit.reminderEnabled &&
-                                        habit.reminderType == ReminderType.interval)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '${(habit.reminderIntervalMinutes ?? 60) ~/ 60}시간마다 알림',
-                                          style: const TextStyle(
-                                            color: AppColors.primaryLight,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    // 쉬는 날 뱃지
-                                    if (widget.habitStatus.isRestDay)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: context.isDarkMode
-                                              ? Colors.white10
-                                              : Colors.black.withValues(alpha: 0.06),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          '쉬는 날 🏖️',
+                                SizedBox(
+                                  height: 22,
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        // 1. 반복 주기 태그
+                                        Text(
+                                          habit.repeatSummary,
                                           style: TextStyle(
                                             color: context.textMuted,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
                                           ),
                                         ),
-                                      ),
-                                    // 스트릭 뱃지
-                                    if (streak > 0)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 7, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.fireOrange
-                                              .withValues(alpha: 0.14),
-                                          borderRadius: BorderRadius.circular(7),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                              Icons.local_fire_department_rounded,
-                                              size: 13,
-                                              color: AppColors.fireOrange,
+                                        const SizedBox(width: 6),
+
+                                        // 2. 스트릭 뱃지 (가장 중요한 성취 지표이므로 주기 바로 뒤에 우선 배치)
+                                        if (streak > 0) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 7, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.fireOrange
+                                                  .withValues(alpha: 0.14),
+                                              borderRadius:
+                                                  BorderRadius.circular(7),
                                             ),
-                                            const SizedBox(width: 2),
-                                            Text(
-                                              '$streak일 연속',
-                                              style: const TextStyle(
-                                                color: AppColors.fireOrange,
-                                                fontSize: 11,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons
+                                                      .local_fire_department_rounded,
+                                                  size: 13,
+                                                  color: AppColors.fireOrange,
+                                                ),
+                                                const SizedBox(width: 2),
+                                                Text(
+                                                  '$streak일 연속',
+                                                  style: const TextStyle(
+                                                    color: AppColors.fireOrange,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+
+                                        // 3. 카운트형 습관 목표 뱃지
+                                        if (isCountType) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: isDone
+                                                  ? AppColors.success
+                                                      .withValues(alpha: 0.14)
+                                                  : habitColor
+                                                      .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '목표 $todayCount/$targetCount${habit.unit}',
+                                              style: TextStyle(
+                                                color: isDone
+                                                    ? AppColors.success
+                                                    : habitColor,
+                                                fontSize: 10.5,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+
+                                        // 4. 간격 알림 뱃지
+                                        if (habit.reminderEnabled &&
+                                            habit.reminderType ==
+                                                ReminderType.interval) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '${(habit.reminderIntervalMinutes ?? 60) ~/ 60}시간마다 알림',
+                                              style: const TextStyle(
+                                                color: AppColors.primaryLight,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+
+                                        // 5. 쉬는 날 뱃지
+                                        if (widget.habitStatus.isRestDay)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: context.isDarkMode
+                                                  ? Colors.white10
+                                                  : Colors.black
+                                                      .withValues(alpha: 0.06),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '쉬는 날 🏖️',
+                                              style: TextStyle(
+                                                color: context.textMuted,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                  ),
+                                ),
                                 ),
                               ],
                             ),

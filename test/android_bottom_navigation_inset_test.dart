@@ -85,6 +85,9 @@ void main() {
         final fabBottom = tester.getBottomRight(fab).dy;
         expect(fabBottom <= safeScreenBottom, true,
             reason: '플로팅 버튼($fabBottom)이 시스템 소프트키에 가려지지 않아야 합니다.');
+
+        // sqflite 비동기 트랜잭션 10초 타임아웃 타이머 안전 정리
+        await tester.pump(const Duration(seconds: 11));
       });
 
       testWidgets('HabitEditScreen 저장 버튼 가려짐 없음 및 스크롤 완료 검증: ${scenario.type}', (tester) async {

@@ -109,31 +109,34 @@ class HabitRepeatCard extends StatelessWidget {
                                 width: 1.4,
                               ),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            displayIcon,
-                            size: 18,
-                            color: isSelected
-                                ? AppColors.primaryLight
-                                : context.textMuted,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            displayTitle,
-                            style: TextStyle(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              displayIcon,
+                              size: 18,
                               color: isSelected
                                   ? AppColors.primaryLight
-                                  : context.textSecondary,
-                              fontSize: 13.5,
-                              fontWeight: isSelected
-                                  ? FontWeight.w800
-                                  : FontWeight.w600,
-                              letterSpacing: -0.2,
+                                  : context.textMuted,
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              displayTitle,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.primaryLight
+                                    : context.textSecondary,
+                                fontSize: 13.5,
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

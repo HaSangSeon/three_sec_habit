@@ -88,7 +88,7 @@ class AdService {
 
   /// 오늘의 모든 습관 올 클리어(100% 달성) 시 하루 딱 1회 기분 좋게 전면 광고 노출
   static void showAllClearInterstitialAd() {
-    if (!_isInitialized) return;
+    if (AppConstants.hideAdsForScreenshot || !_isInitialized) return;
     final todayStr = DateUtil.today();
     if (_lastInterstitialShownDate == todayStr) {
       // 오늘 이미 올클리어 전면 광고를 시청했으므로 과도한 피로도 방지를 위해 스킵 (하루 1회 엄격 제한)
@@ -120,7 +120,7 @@ class AdService {
 
   /// 하루 1회 전면 광고 노출 (통계 화면 진입 시 등)
   static void showInterstitialOncePerDay() {
-    if (!_isInitialized) return;
+    if (AppConstants.hideAdsForScreenshot || !_isInitialized) return;
     final todayStr = DateUtil.today();
     if (_lastInterstitialShownDate == todayStr) {
       // 오늘 이미 1회 노출되었으므로 과도한 노출 방지를 위해 스킵

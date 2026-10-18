@@ -591,39 +591,45 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
             } catch (_) {}
             Navigator.of(context).pop(index);
           },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                          .withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  color: isSelected ? activeColor : inactiveColor,
-                  size: 22,
-                ),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primary
+                              .withValues(alpha: context.isDarkMode ? 0.22 : 0.12)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      isSelected ? activeIcon : icon,
+                      color: isSelected ? activeColor : inactiveColor,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected ? activeColor : inactiveColor,
+                      letterSpacing: -0.2,
+                    ),
+                    child: Text(label),
+                  ),
+                ],
               ),
-              const SizedBox(height: 2),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  color: isSelected ? activeColor : inactiveColor,
-                  letterSpacing: -0.2,
-                ),
-                child: Text(label),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -693,87 +699,93 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                   ),
                   const SizedBox(width: 10),
 
-                  // 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              currentColor,
-                              Color.lerp(currentColor, Colors.black, context.isDarkMode ? 0.15 : 0.1) ?? currentColor,
+                  // 모던 프리미엄 브랜드 뱃지 + 타이포그래피 + 상태 캡슐 (초소형 기기 및 폰트 확대 대응)
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                currentColor,
+                                Color.lerp(currentColor, Colors.black, context.isDarkMode ? 0.15 : 0.1) ?? currentColor,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: currentColor.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
                             ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 1.0,
+                          child: Icon(
+                            AppIcons.getIcon(_selectedIconKey),
+                            color: Colors.white,
+                            size: 20,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: currentColor.withValues(alpha: 0.35),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
                         ),
-                        child: Icon(
-                          AppIcons.getIcon(_selectedIconKey),
-                          color: Colors.white,
-                          size: 20,
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _isEditing ? '습관 수정' : '습관 등록',
+                                  style: TextStyle(
+                                    color: context.textPrimary,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 19.5,
+                                    letterSpacing: -0.6,
+                                    height: 1.15,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: currentColor.withValues(alpha: context.isDarkMode ? 0.22 : 0.10),
+                                    borderRadius: BorderRadius.circular(7),
+                                    border: Border.all(
+                                      color: currentColor.withValues(alpha: context.isDarkMode ? 0.42 : 0.25),
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _isEditing ? '편집' : '신규',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: context.isDarkMode
+                                          ? Color.lerp(currentColor, Colors.white, 0.4)
+                                          : currentColor,
+                                      letterSpacing: -0.2,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            _isEditing ? '습관 수정' : '습관 등록',
-                            style: TextStyle(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 19.5,
-                              letterSpacing: -0.6,
-                              height: 1.15,
-                            ),
-                          ),
-                          const SizedBox(width: 7),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: currentColor.withValues(alpha: context.isDarkMode ? 0.22 : 0.10),
-                              borderRadius: BorderRadius.circular(7),
-                              border: Border.all(
-                                color: currentColor.withValues(alpha: context.isDarkMode ? 0.42 : 0.25),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: Text(
-                              _isEditing ? '편집' : '신규',
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w800,
-                                color: context.isDarkMode
-                                    ? Color.lerp(currentColor, Colors.white, 0.4)
-                                    : currentColor,
-                                letterSpacing: -0.2,
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-
-                  const Spacer(),
+                  const SizedBox(width: 8),
 
                   // 다크/라이트 모드 전환 버튼 (38x38 squircle)
                   Consumer<ThemeProvider>(

@@ -67,28 +67,29 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                 ]
               : null,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? Colors.white : context.textSecondary,
-            ),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: isSelected ? Colors.white : context.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Text(
                 title,
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isSelected ? Colors.white : context.textSecondary,
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -739,33 +740,39 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppColors.primaryLight.withValues(alpha: 0.45),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.widgets_rounded, size: 13, color: AppColors.primaryLight),
-                            SizedBox(width: 5),
-                            Text(
-                              '홈 화면 실시간 스마트 위젯',
-                              style: TextStyle(
-                                color: AppColors.primaryLight,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: AppColors.primaryLight.withValues(alpha: 0.45),
+                                width: 1,
                               ),
                             ),
-                          ],
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.widgets_rounded, size: 13, color: AppColors.primaryLight),
+                                SizedBox(width: 5),
+                                Text(
+                                  '홈 화면 실시간 스마트 위젯',
+                                  style: TextStyle(
+                                    color: AppColors.primaryLight,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 8),
                       InkWell(
                         onTap: () => Navigator.of(context).pop(),
                         borderRadius: BorderRadius.circular(20),
@@ -991,20 +998,24 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.bolt_rounded, size: 18),
-                            const SizedBox(width: 4),
-                            Text(
-                              _is4x2 ? '4x2 위젯 홈에 추가' : '2x2 위젯 홈에 추가',
-                              style: const TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: -0.2,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.bolt_rounded, size: 18),
+                              const SizedBox(width: 4),
+                              Text(
+                                _is4x2 ? '4x2 위젯 홈에 추가' : '2x2 위젯 홈에 추가',
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

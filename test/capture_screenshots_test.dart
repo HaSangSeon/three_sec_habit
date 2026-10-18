@@ -27,7 +27,7 @@ Future<void> saveScreenshot(WidgetTester tester, GlobalKey key, String filename)
     final file = File('/Users/hasangseon/three_sec_habit/build/$filename');
     await file.parent.create(recursive: true);
     await file.writeAsBytes(buffer);
-    print('SUCCESS_SAVED: $filename');
+    debugPrint('SUCCESS_SAVED: $filename');
   });
 }
 

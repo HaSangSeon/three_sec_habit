@@ -30,4 +30,7 @@ class AppConstants {
   static const String testBannerAdId = 'ca-app-pub-3940256099942544/6300978111';
   // 안드로이드 전면 광고 테스트 ID
   static const String testInterstitialAdId = 'ca-app-pub-3940256099942544/1033173712';
+
+  // 스토어 등록 스크린샷 촬영용 임시 광고 비활성화 플래그 (배너 및 전면 광고 완전 숨김)
+  static const bool hideAdsForScreenshot = false;
 }

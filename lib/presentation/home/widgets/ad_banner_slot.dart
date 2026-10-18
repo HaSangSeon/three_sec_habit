@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/services/ad_service.dart';
 
 /// 하단 AdMob 가로 100% 맞춤형 적응형 배너 광고 위젯
@@ -28,7 +29,7 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
   }
 
   Future<void> _loadAdaptiveAd(int width) async {
-    if (kIsWeb) return;
+    if (kIsWeb || AppConstants.hideAdsForScreenshot) return;
     _isAdLoading = true;
     _loadedWidth = width;
 
@@ -74,7 +75,13 @@ class _AdBannerSlotState extends State<AdBannerSlot> {
 
   @override
   Widget build(BuildContext context) {
-    final height = AdService.bannerHeight;
+    if (AppConstants.hideAdsForScreenshot) {
+      return const SizedBox.shrink();
+    }
+
+    final height = _isAdLoaded && _bannerAd != null
+        ? _bannerAd!.size.height.toDouble()
+        : AdService.bannerHeight;
 
     if (_isAdLoaded && _bannerAd != null) {
       return Container(
