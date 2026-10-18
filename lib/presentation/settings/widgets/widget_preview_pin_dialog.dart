@@ -553,67 +553,100 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
     required String desc,
     required String badge,
     required Color badgeColor,
+    required bool isDark,
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
       decoration: BoxDecoration(
-        color: context.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.surfaceBorder),
+        color: isDark ? const Color(0xFF1E2330) : Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2E3547) : const Color(0xFFE2E8F0),
+          width: 0.9,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
+              gradient: LinearGradient(
+                colors: [
+                  iconColor.withValues(alpha: isDark ? 0.24 : 0.14),
+                  iconColor.withValues(alpha: isDark ? 0.12 : 0.06),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: iconColor.withValues(alpha: isDark ? 0.35 : 0.20),
+                width: 0.8,
+              ),
             ),
-            child: Icon(icon, color: iconColor, size: 18),
+            child: Icon(icon, color: iconColor, size: 17),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Expanded(
+                    Flexible(
                       child: Text(
                         title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: context.textPrimary,
                           fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: badgeColor.withValues(alpha: 0.12),
+                        color: badgeColor.withValues(alpha: isDark ? 0.18 : 0.08),
                         borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: badgeColor.withValues(alpha: isDark ? 0.35 : 0.20),
+                          width: 0.8,
+                        ),
                       ),
                       child: Text(
                         badge,
                         style: TextStyle(
                           color: badgeColor,
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3.5),
                 Text(
                   desc,
                   style: TextStyle(
-                    color: context.textMuted,
+                    color: context.textSecondary,
                     fontSize: 11.5,
                     height: 1.4,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
@@ -817,28 +850,31 @@ class _WidgetPreviewPinDialogState extends State<WidgetPreviewPinDialog> {
                     _buildFeatureCard(
                       icon: Icons.check_circle_outline_rounded,
                       iconColor: AppColors.success,
-                      title: '원터치 즉시 완료 & 해제 (토글)',
-                      desc: '위젯 우측의 버튼을 누르면 즉시 [✓] 완료되며, 실수로 눌렀을 땐 다시 눌러 바로 취소할 수 있습니다.',
-                      badge: '양방향 연동',
+                      title: '원터치 즉시 완료 & 취소',
+                      desc: '위젯 체크 버튼을 누르면 즉시 [✓] 완료되며, 다시 누르면 간편하게 취소할 수 있습니다.',
+                      badge: '토글 연동',
                       badgeColor: AppColors.success,
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 8),
                     _buildFeatureCard(
                       icon: Icons.repeat_rounded,
                       iconColor: AppColors.primaryLight,
-                      title: '회차형 습관 단계별 카운팅 (+1)',
-                      desc: '물마시기, 푸시업 등 목표 횟수가 있는 습관은 [+1] 버튼으로 1잔/1회씩 누적되며 목표 시 자동 완료됩니다.',
-                      badge: '실시간 카운트',
+                      title: '회차형 습관 단계별 카운팅',
+                      desc: '물마시기, 운동 등 목표 횟수가 있는 습관은 [+1] 버튼으로 1회씩 누적됩니다.',
+                      badge: '+1 누적',
                       badgeColor: AppColors.primaryLight,
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 8),
                     _buildFeatureCard(
                       icon: Icons.sync_rounded,
-                      iconColor: Colors.amber,
-                      title: '앱과 100% 실시간 양방향 자동 동기화',
-                      desc: '위젯에서 체크한 내역은 앱 내 캘린더 잔디와 통계에 즉시 반영되며 순서와 데이터가 항상 일치합니다.',
-                      badge: '실시간 동기화',
-                      badgeColor: Colors.amber,
+                      iconColor: const Color(0xFFF59E0B),
+                      title: '실시간 양방향 자동 연동',
+                      desc: '위젯에서 체크한 내역은 앱 내 잔디 캘린더와 통계에 즉시 100% 반영됩니다.',
+                      badge: '100% 동기화',
+                      badgeColor: const Color(0xFFF59E0B),
+                      isDark: isDark,
                     ),
                     const SizedBox(height: 12),
 
