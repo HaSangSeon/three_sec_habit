@@ -15,6 +15,7 @@ Future<void> backgroundCallback(Uri? uri) async {
   if (uri == null) return;
   WidgetsFlutterBinding.ensureInitialized();
   await HomeWidget.setAppGroupId(AppConstants.appGroupId);
+  await NotificationService.initializeForBackground();
   debugPrint('⚡ [HomeWidget] backgroundCallback received URI: $uri');
 
   if (uri.scheme == 'habit3sec' && uri.host == 'toggle') {

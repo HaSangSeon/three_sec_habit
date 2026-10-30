@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:three_sec_habit/core/constants/app_colors.dart';
 import 'package:three_sec_habit/core/constants/app_icons.dart';
+import 'package:three_sec_habit/core/services/notification_service.dart';
 import 'package:three_sec_habit/core/utils/date_util.dart';
 import 'package:three_sec_habit/models/habit.dart';
 import 'package:three_sec_habit/presentation/common/time_picker_select_dialog.dart';
@@ -355,7 +356,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
           (_reminderStartTime?.minute ?? 0);
       final endMin =
           (_reminderEndTime?.hour ?? 21) * 60 + (_reminderEndTime?.minute ?? 0);
-      if (endMin <= startMin) {
+      if (endMin == startMin) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -364,7 +365,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                 Icon(Icons.error_outline_rounded,
                     color: Colors.white, size: 18),
                 SizedBox(width: 8),
-                Expanded(child: Text('알림 종료 시간은 시작 시간보다 늦어야 합니다.')),
+                Expanded(child: Text('알림 시작 시간과 종료 시간은 달라야 합니다.')),
               ],
             ),
             backgroundColor: AppColors.fireOrange,
@@ -434,6 +435,56 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         reminderEndTime: reminderEndStr,
       );
       await habitProvider.addHabit(newHabit);
+    }
+
+    if (_reminderEnabled) {
+      final canExact = await NotificationService.canScheduleExactAlarms();
+      if (!canExact && mounted) {
+        final shouldOpen = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: ctx.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.alarm_on_rounded, color: AppColors.primary, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  '정시 알람 권한 안내',
+                  style: TextStyle(
+                    color: ctx.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Android 14 이상에서는 시스템 "알람 및 리마인더" 권한을 허용해야 설정하신 시각에 1초 오차 없이 알람이 도착합니다.\n\n지금 설정 화면으로 이동할까요?',
+              style: TextStyle(color: ctx.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text('나중에', style: TextStyle(color: ctx.textMuted)),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('설정하러 가기'),
+              ),
+            ],
+          ),
+        );
+        if (shouldOpen == true) {
+          await NotificationService.requestExactAlarmsPermission();
+          await habitProvider.syncTodayWidgetAndNotification();
+        }
+      }
     }
 
     if (mounted && Navigator.of(context).canPop()) {

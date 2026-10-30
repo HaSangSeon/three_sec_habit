@@ -4,7 +4,9 @@ import 'package:three_sec_habit/presentation/home/widgets/habit_calendar_picker_
 
 void main() {
   testWidgets('HabitCalendarPickerDialog 렌더링 및 날짜 선택 인터랙션 검증', (tester) async {
-    final initialDate = DateTime(2026, 10, 18);
+    final today = DateTime.now();
+    final yesterday = today.subtract(const Duration(days: 1));
+    final initialDate = today;
 
     DateTime? selected;
     await tester.pumpWidget(
@@ -42,15 +44,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // 이동 버튼 라벨이 어제 날짜로 변경되었는지 확인
-    expect(find.text('10/17 이동'), findsOneWidget);
+    final expectedYesterdayText = '${yesterday.month}/${yesterday.day} 이동';
+    expect(find.text(expectedYesterdayText), findsOneWidget);
 
     // 4. 이동 버튼 탭하여 결과 반환 확인
-    await tester.tap(find.text('10/17 이동'));
+    await tester.tap(find.text(expectedYesterdayText));
     await tester.pumpAndSettle();
 
     expect(selected, isNotNull);
-    expect(selected!.year, 2026);
-    expect(selected!.month, 10);
-    expect(selected!.day, 17);
+    expect(selected!.year, yesterday.year);
+    expect(selected!.month, yesterday.month);
+    expect(selected!.day, yesterday.day);
   });
 }

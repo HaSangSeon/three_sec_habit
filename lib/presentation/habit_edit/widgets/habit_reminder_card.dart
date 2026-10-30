@@ -988,7 +988,7 @@ class HabitReminderCard extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         isNightExcluded
-                            ? '밤 9시 ~ 아침 9시(수면 시간) 알림 제외'
+                            ? '${reminderStartTime?.hour.toString().padLeft(2, '0') ?? "09"}:${reminderStartTime?.minute.toString().padLeft(2, '0') ?? "00"} ~ ${reminderEndTime?.hour.toString().padLeft(2, '0') ?? "21"}:${reminderEndTime?.minute.toString().padLeft(2, '0') ?? "00"} 사이에만 알림 발송'
                             : '새벽을 포함하여 24시간 알림 발송',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1020,6 +1020,76 @@ class HabitReminderCard extends StatelessWidget {
           ),
         ),
       ),
+      if (isNightExcluded) ...[
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onSelectStartTime,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.surfaceBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('시작 시각', style: TextStyle(fontSize: 10.5, color: context.textMuted, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${reminderStartTime?.hour.toString().padLeft(2, '0') ?? "09"}:${reminderStartTime?.minute.toString().padLeft(2, '0') ?? "00"}',
+                            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: context.textPrimary),
+                          ),
+                        ],
+                      ),
+                      const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primaryLight),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: onSelectEndTime,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.surfaceBorder),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('종료 시각', style: TextStyle(fontSize: 10.5, color: context.textMuted, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${reminderEndTime?.hour.toString().padLeft(2, '0') ?? "21"}:${reminderEndTime?.minute.toString().padLeft(2, '0') ?? "00"}',
+                            style: TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: context.textPrimary),
+                          ),
+                        ],
+                      ),
+                      const Icon(Icons.access_time_rounded, size: 16, color: AppColors.primaryLight),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
 
           const SizedBox(height: 14),
 

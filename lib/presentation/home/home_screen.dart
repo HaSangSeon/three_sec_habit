@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/utils/date_util.dart';
 import '../../models/habit.dart';
 import '../../providers/habit_provider.dart';
@@ -26,29 +28,118 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentTabIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _habitCardKeys = {};
+  int? _highlightedHabitId;
+  Timer? _highlightTimer;
+  DateTime _lastActiveDate = DateTime.now();
+
+  GlobalKey _keyForHabit(int id) => _habitCardKeys.putIfAbsent(id, () => GlobalKey());
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // 화면 진입 시 오늘 습관 목록 로드
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HabitProvider>().loadHabits();
+    NotificationService.notificationTappedHabitId.addListener(_onNotificationTappedHabit);
+    // 화면 진입 시 오늘 습관 목록 로드 후 대기 중인 알림 탭 처리
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<HabitProvider>().loadHabits();
+      if (!mounted) return;
+      if (NotificationService.notificationTappedHabitId.value != null) {
+        await _onNotificationTappedHabit();
+      }
     });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    NotificationService.notificationTappedHabitId.removeListener(_onNotificationTappedHabit);
+    _highlightTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // 바탕화면 위젯 등 외부에서 데이터가 변경되었을 수 있으므로 앱 복귀 시 실시간 동기화
-      context.read<HabitProvider>().loadHabits();
+      final now = DateTime.now();
+      final habitProvider = context.read<HabitProvider>();
+      // 실제 자정(00:00)이 지나 날짜가 바뀐 경우에만 오늘 날짜로 자동 전환
+      if (!DateUtil.isSameDay(_lastActiveDate, now)) {
+        _lastActiveDate = now;
+        habitProvider.setSelectedDate(now);
+      } else {
+        habitProvider.loadHabits();
+      }
     }
+  }
+
+  /// 푸시 알림 탭 진입 시 해당 습관 화면 직행 & 하이라이트 포커스
+  Future<void> _onNotificationTappedHabit() async {
+    final habitId = NotificationService.notificationTappedHabitId.value;
+    if (habitId == null || !mounted) return;
+    NotificationService.notificationTappedHabitId.value = null;
+
+    // 1. 열려있는 서브 다이얼로그나 모달 닫기
+    Navigator.of(context).popUntil((route) => route.isFirst);
+
+    // 2. '오늘의 습관' 탭으로 즉시 전환
+    if (_currentTabIndex != 0) {
+      setState(() {
+        _currentTabIndex = 0;
+      });
+    }
+
+    // 3. 오늘 날짜로 전환 및 비동기 로딩 완료 대기
+    final habitProvider = context.read<HabitProvider>();
+    final now = DateTime.now();
+    if (!DateUtil.isSameDay(habitProvider.selectedDate, now)) {
+      await habitProvider.setSelectedDate(now);
+    } else if (habitProvider.habits.isEmpty) {
+      await habitProvider.loadHabits();
+    }
+
+    if (!mounted) return;
+
+    // 4. 해당 습관 카드 하이라이트 지정
+    setState(() {
+      _highlightedHabitId = habitId;
+    });
+
+    // 5. 프레임 렌더 완료 후 해당 카드로 정밀 스크롤
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final targetContext = _habitCardKeys[habitId]?.currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 450),
+          curve: Curves.easeOutCubic,
+          alignment: 0.15,
+        );
+      } else if (_scrollController.hasClients) {
+        final habits = habitProvider.todayHabits;
+        final index = habits.indexWhere((h) => h.habit.id == habitId);
+        if (index != -1) {
+          _scrollController.animateTo(
+            (index * 96.0).clamp(0.0, _scrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      }
+    });
+
+    // 3초 후 하이라이트 안전 해제
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _highlightedHabitId == habitId) {
+        setState(() {
+          _highlightedHabitId = null;
+        });
+      }
+    });
   }
 
   Future<dynamic> _navigateToHabitEdit({Habit? habit}) {
@@ -500,6 +591,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           backgroundColor: context.surface,
                           onRefresh: () => habitProvider.loadHabits(),
                           child: ListView(
+                            controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.only(bottom: 100),
                             children: [
@@ -507,7 +599,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               if (habitProvider.todayHabits.isNotEmpty) ...[
                                 ...habitProvider.todayHabits.map(
                                   (habitStatus) => HabitCardItem(
+                                    key: habitStatus.habit.id != null
+                                        ? _keyForHabit(habitStatus.habit.id!)
+                                        : null,
                                     habitStatus: habitStatus,
+                                    isHighlighted: _highlightedHabitId == habitStatus.habit.id,
                                     onToggle: () {
                                       if (habitStatus.habit.id != null) {
                                         _handleHabitAction(() => habitProvider
@@ -575,7 +671,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 ),
                                 ...habitProvider.restHabits.map(
                                   (habitStatus) => HabitCardItem(
+                                    key: habitStatus.habit.id != null
+                                        ? _keyForHabit(habitStatus.habit.id!)
+                                        : null,
                                     habitStatus: habitStatus,
+                                    isHighlighted: _highlightedHabitId == habitStatus.habit.id,
                                     onToggle: () {
                                       if (habitStatus.habit.id != null) {
                                         _handleHabitAction(() => habitProvider

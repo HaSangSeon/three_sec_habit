@@ -12,6 +12,7 @@ class HabitCardItem extends StatefulWidget {
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
   final VoidCallback? onTapDetail;
+  final bool isHighlighted;
 
   const HabitCardItem({
     super.key,
@@ -20,6 +21,7 @@ class HabitCardItem extends StatefulWidget {
     this.onIncrement,
     this.onDecrement,
     this.onTapDetail,
+    this.isHighlighted = false,
   });
 
   @override
@@ -154,13 +156,22 @@ class _HabitCardItemState extends State<HabitCardItem>
             : context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDone
-              ? AppColors.success.withValues(alpha: 0.4)
-              : context.surfaceBorder,
-          width: isDone ? 1.4 : 1.0,
+          color: widget.isHighlighted
+              ? AppColors.primary
+              : isDone
+                  ? AppColors.success.withValues(alpha: 0.4)
+                  : context.surfaceBorder,
+          width: widget.isHighlighted ? 2.5 : (isDone ? 1.4 : 1.0),
         ),
         boxShadow: [
-          if (isDone)
+          if (widget.isHighlighted)
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.35),
+              blurRadius: 18,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
+            )
+          else if (isDone)
             BoxShadow(
               color: AppColors.success.withValues(alpha: 0.08),
               blurRadius: 14,
@@ -329,28 +340,9 @@ class _HabitCardItemState extends State<HabitCardItem>
                                           const SizedBox(width: 6),
                                         ],
 
-                                        // 4. 간격 알림 뱃지
-                                        if (habit.reminderEnabled &&
-                                            habit.reminderType ==
-                                                ReminderType.interval) ...[
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primary
-                                                  .withValues(alpha: 0.12),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              '${(habit.reminderIntervalMinutes ?? 60) ~/ 60}시간마다 알림',
-                                              style: const TextStyle(
-                                                color: AppColors.primaryLight,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
+                                        // 4. 알림 뱃지 (고정 시각 및 간격 알림, 완료 상태 반영)
+                                        if (habit.reminderEnabled) ...[
+                                          _buildReminderBadge(context, habit, isDone: isDone),
                                           const SizedBox(width: 6),
                                         ],
 
@@ -572,5 +564,69 @@ class _HabitCardItemState extends State<HabitCardItem>
             ),
           ),
         );
+  }
+
+  Widget _buildReminderBadge(
+    BuildContext context,
+    Habit habit, {
+    required bool isDone,
+  }) {
+    if (isDone) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.success.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline_rounded,
+                size: 10, color: AppColors.success),
+            SizedBox(width: 3),
+            Text(
+              '오늘 알림 완료',
+              style: TextStyle(
+                color: AppColors.success,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    String text = '';
+    if (habit.reminderType == ReminderType.fixed &&
+        habit.reminderTimes.isNotEmpty) {
+      if (habit.reminderTimes.length == 1) {
+        text = '🔔 ${habit.reminderTimes.first}';
+      } else {
+        text = '🔔 ${habit.reminderTimes.first} 외 ${habit.reminderTimes.length - 1}회';
+      }
+    } else if (habit.reminderType == ReminderType.interval) {
+      final mins = habit.reminderIntervalMinutes ?? 60;
+      final intervalStr = mins < 60 ? '$mins분' : '${mins ~/ 60}시간';
+      text = '🔔 $intervalStr마다';
+    }
+
+    if (text.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.primaryLight,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }

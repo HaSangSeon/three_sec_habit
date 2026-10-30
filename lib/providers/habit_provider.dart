@@ -43,9 +43,9 @@ class HabitProvider extends ChangeNotifier {
       final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
       if (isToday) {
         // 홈 위젯 동기화 (오늘 기준 데이터로만 위젯 갱신)
-        HomeWidgetService.updateWidgetData(_habits);
+        await HomeWidgetService.updateWidgetData(_habits);
         // 스마트 알림 일괄 최신화 (오늘 기준 완료 상태로만 스케줄링)
-        NotificationService.rescheduleAllHabits(_habits);
+        await NotificationService.rescheduleAllHabits(_habits);
       }
     } catch (e) {
       debugPrint('Error loading habits: $e');
@@ -105,6 +105,8 @@ class HabitProvider extends ChangeNotifier {
         notifyListeners();
         await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
+      } else {
+        await syncTodayWidgetAndNotification();
       }
     } catch (e) {
       debugPrint('DB Error during toggle: $e');
@@ -154,6 +156,8 @@ class HabitProvider extends ChangeNotifier {
         notifyListeners();
         await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
+      } else {
+        await syncTodayWidgetAndNotification();
       }
     } catch (e) {
       debugPrint('DB Error during increment: $e');
@@ -201,6 +205,8 @@ class HabitProvider extends ChangeNotifier {
         notifyListeners();
         await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
+      } else {
+        await syncTodayWidgetAndNotification();
       }
     } catch (e) {
       debugPrint('DB Error during decrement: $e');
@@ -251,6 +257,8 @@ class HabitProvider extends ChangeNotifier {
         notifyListeners();
         await NotificationService.rescheduleAllHabits(_habits);
         HomeWidgetService.updateWidgetData(_habits);
+      } else {
+        await syncTodayWidgetAndNotification();
       }
     } catch (e) {
       debugPrint('DB Error during setHabitCount: $e');
@@ -271,6 +279,11 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
+  /// 오늘 기준 습관 상태 목록 직접 조회 (알림 일괄 설정 등에서 사용)
+  Future<List<HabitWithTodayStatus>> getTodayHabitsStatus() {
+    return _habitDao.getHabitsWithStatusForDate(DateTime.now());
+  }
+
   /// 습관 추가
   Future<int> addHabit(Habit habit) async {
     final insertedId = await _habitDao.insertHabit(habit);
@@ -285,6 +298,10 @@ class HabitProvider extends ChangeNotifier {
   Future<void> updateHabit(Habit habit) async {
     final targetDateStr = DateUtil.formatDate(_selectedDate);
     await _habitDao.updateHabit(habit, targetDate: targetDateStr);
+    final todayStr = DateUtil.today();
+    if (targetDateStr != todayStr && habit.id != null) {
+      await _habitDao.resyncHabitLogForDate(habitId: habit.id!, habit: habit, date: todayStr);
+    }
 
     // 수정한 습관의 오늘 기준 최신 완료 상태(매일, 주N회 달성 여부 등)를 가져와 알림 스케줄링 완벽 동기화
     final todayHabits = await _habitDao.getHabitsWithStatusForDate(DateTime.now());
@@ -313,8 +330,8 @@ class HabitProvider extends ChangeNotifier {
   }
 
   /// 선택 날짜 변경
-  void setSelectedDate(DateTime date) {
+  Future<void> setSelectedDate(DateTime date) {
     _selectedDate = date;
-    loadHabits(date: date);
+    return loadHabits(date: date);
   }
 }

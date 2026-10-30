@@ -1,12 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/home_widget_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../common/help_guide_dialog.dart';
+import 'widgets/battery_optimization_dialog.dart';
 import 'widgets/privacy_policy_dialog.dart';
 import 'widgets/widget_preview_pin_dialog.dart';
 
@@ -19,12 +22,26 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _appVersion = 'v1.0.7';
+  String _appVersion = 'v1.0.8';
+  bool _allNotificationsEnabled = true;
+  bool _exactAlarmAllowed = true;
 
   @override
   void initState() {
     super.initState();
     _loadAppVersion();
+    _loadNotificationSettings();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    final enabled = await NotificationService.isAllNotificationsEnabled();
+    final exactAllowed = await NotificationService.canScheduleExactAlarms();
+    if (mounted) {
+      setState(() {
+        _allNotificationsEnabled = enabled;
+        _exactAlarmAllowed = exactAllowed;
+      });
+    }
   }
 
   Future<void> _loadAppVersion() async {
@@ -396,6 +413,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 20),
 
+          // 3. 알림 설정 섹션
+          _buildSectionHeader('알림 설정', Icons.notifications_active_outlined, context),
+          Card(
+            margin: EdgeInsets.zero,
+            color: context.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: context.surfaceBorder),
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.notifications_active_rounded, color: AppColors.primaryLight, size: 22),
+                  title: Text(
+                    '전체 푸시 알림',
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    _allNotificationsEnabled ? '모든 습관의 예약 알림이 정상 발송됩니다.' : '모든 알림이 꺼진 상태입니다.',
+                    style: TextStyle(color: context.textMuted, fontSize: 12),
+                  ),
+                  value: _allNotificationsEnabled,
+                  activeTrackColor: AppColors.primary,
+                  activeThumbColor: Colors.white,
+                  onChanged: (val) async {
+                    setState(() => _allNotificationsEnabled = val);
+                    final habitProvider = context.read<HabitProvider>();
+                    final todayHabits = await habitProvider.getTodayHabitsStatus();
+                    await NotificationService.setAllNotificationsEnabled(val, todayHabits);
+                  },
+                ),
+                if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
+                  Divider(color: context.surfaceBorder, height: 1),
+                  ListTile(
+                    leading: Icon(
+                      _exactAlarmAllowed ? Icons.alarm_on_rounded : Icons.alarm_off_rounded,
+                      color: _exactAlarmAllowed ? AppColors.success : AppColors.fireOrange,
+                      size: 22,
+                    ),
+                    title: Text(
+                      '정시 알람 권한 (Android 14+)',
+                      style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
+                    ),
+                    subtitle: Text(
+                      _exactAlarmAllowed
+                          ? '정확한 시각에 오차 없이 알람이 발송되도록 허용되어 있습니다.'
+                          : '시스템 제한으로 알람이 지연될 수 있습니다. 탭하여 허용해주세요.',
+                      style: TextStyle(
+                        color: _exactAlarmAllowed ? context.textMuted : AppColors.fireOrange,
+                        fontSize: 12,
+                      ),
+                    ),
+                    trailing: _exactAlarmAllowed
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('허용됨', style: TextStyle(color: AppColors.success, fontSize: 11, fontWeight: FontWeight.bold)),
+                          )
+                        : ElevatedButton(
+                            onPressed: () async {
+                              final habitProvider = context.read<HabitProvider>();
+                              await NotificationService.requestExactAlarmsPermission();
+                              final allowed = await NotificationService.canScheduleExactAlarms();
+                              if (mounted) {
+                                setState(() => _exactAlarmAllowed = allowed);
+                                if (allowed) {
+                                  await habitProvider.syncTodayWidgetAndNotification();
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.fireOrange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            child: const Text('설정하기', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          ),
+                    onTap: () async {
+                      final habitProvider = context.read<HabitProvider>();
+                      await NotificationService.requestExactAlarmsPermission();
+                      final allowed = await NotificationService.canScheduleExactAlarms();
+                      if (mounted) {
+                        setState(() => _exactAlarmAllowed = allowed);
+                        if (allowed) {
+                          await habitProvider.syncTodayWidgetAndNotification();
+                        }
+                      }
+                    },
+                  ),
+                ],
+                Divider(color: context.surfaceBorder, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.send_rounded, color: AppColors.primaryLight, size: 22),
+                  title: Text(
+                    '테스트 알림 발송',
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    '지금 즉시 상단바 알림 수신 상태를 점검합니다',
+                    style: TextStyle(color: context.textMuted, fontSize: 12),
+                  ),
+                  trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
+                  onTap: () async {
+                    final sent = await NotificationService.showTestNotification();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(sent ? '⚡ 상단바에 테스트 알림이 발송되었습니다!' : '알림 권한이 허용되지 않았습니다.'),
+                          backgroundColor: sent ? AppColors.primary : AppColors.fireOrange,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                Divider(color: context.surfaceBorder, height: 1),
+                ListTile(
+                  leading: const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 22),
+                  title: Text(
+                    '정시 알림 및 배터리 절전 예외 팁',
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                  ),
+                  subtitle: Text(
+                    '삼성 갤럭시, 샤오미 등 기기별 알림 지연 방지 설정',
+                    style: TextStyle(color: context.textMuted, fontSize: 12),
+                  ),
+                  trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
+                  onTap: () => BatteryOptimizationDialog.show(context),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // 4. 데이터 관리 섹션 (백업 및 복원)
           _buildSectionHeader('데이터 관리', Icons.storage_rounded, context),
           Card(
@@ -714,7 +871,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     if (result['success'] == true) {
-      await habitProvider.loadHabits();
+      await habitProvider.loadHabits(date: DateTime.now());
+      await habitProvider.syncTodayWidgetAndNotification();
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(

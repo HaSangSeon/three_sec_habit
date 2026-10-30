@@ -31,7 +31,7 @@ class ThreeSecHabitApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => HabitProvider()..loadHabits()),
+        ChangeNotifierProvider(create: (_) => HabitProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

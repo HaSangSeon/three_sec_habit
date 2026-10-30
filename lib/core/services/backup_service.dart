@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../constants/app_constants.dart';
 import '../database/database_helper.dart';
+import 'notification_service.dart';
 
 /// 데이터 백업(내보내기) 및 복원(가져오기) 서비스
 class BackupService {
@@ -105,6 +106,9 @@ class BackupService {
 
       int restoredHabits = 0;
       int restoredLogs = 0;
+
+      // 기존 모든 예약 알람 일괄 취소 (유령 알림 방지)
+      await NotificationService.cancelAll();
 
       // 트랜잭션으로 안전하게 기존 데이터 대체 및 외래키 맵핑 복원
       await db.transaction((txn) async {

@@ -115,7 +115,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('물 8잔 마시기'), findsOneWidget);
-      expect(find.text('1시간마다 알림'), findsOneWidget);
+      expect(find.text('🔔 1시간마다'), findsOneWidget);
       expect(find.text('목표 3/8잔'), findsOneWidget);
 
       // +1 원형 버튼 탭하여 1잔 증가
