@@ -22,7 +22,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  String _appVersion = 'v1.0.8';
+  String _appVersion = 'v1.0.9';
   bool _allNotificationsEnabled = true;
   bool _exactAlarmAllowed = true;
 
@@ -438,7 +438,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   activeTrackColor: AppColors.primary,
                   activeThumbColor: Colors.white,
                   onChanged: (val) async {
+                    if (val) {
+                      final hasPerm = await NotificationService.checkSystemNotificationPermission();
+                      if (!hasPerm) {
+                        await NotificationService.requestSystemNotificationPermission();
+                      }
+                    }
                     setState(() => _allNotificationsEnabled = val);
+                    if (!context.mounted) return;
                     final habitProvider = context.read<HabitProvider>();
                     final todayHabits = await habitProvider.getTodayHabitsStatus();
                     await NotificationService.setAllNotificationsEnabled(val, todayHabits);
@@ -458,7 +465,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     subtitle: Text(
                       _exactAlarmAllowed
-                          ? '정확한 시각에 오차 없이 알람이 발송되도록 허용되어 있습니다.'
+                          ? '설정한 시각에 맞춰 정시 알람이 발송되도록 허용되어 있습니다.'
                           : '시스템 제한으로 알람이 지연될 수 있습니다. 탭하여 허용해주세요.',
                       style: TextStyle(
                         color: _exactAlarmAllowed ? context.textMuted : AppColors.fireOrange,

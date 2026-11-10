@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:three_sec_habit/models/habit.dart';
+import 'package:three_sec_habit/core/services/notification_service.dart';
 
 void main() {
   setUpAll(() {
@@ -383,6 +384,31 @@ void main() {
     for (final id in ids) {
       expect(id >= 10000 && id < 10800, true);
     }
+  });
+
+  test('Astra 검증: 오늘 완료 후 오늘 23:06 재발송 차단 및 네이티브 당겨짐 방지 검증', () {
+    // 가상의 현재 시각: 2026-11-10 20:00 (화요일)
+    final mockNow = tz.TZDateTime(tz.local, 2026, 11, 10, 20, 0);
+    // 내일 23:06 (수요일)
+    final tomorrow2306 = tz.TZDateTime(tz.local, 2026, 11, 11, 23, 6);
+
+    // DateTimeComponents.time 을 적용했을 때 네이티브 Java는 오늘 23:06으로 당겨버린다.
+    // 따라서 canUseDailyRepeat(mockNow, tomorrow2306)은 반드시 false여야 함!
+    expect(NotificationService.canUseDailyRepeat(mockNow, tomorrow2306), false);
+
+    // 반면, 이미 시각이 지난 08:00에 대한 내일 알림(tomorrow0800)은 네이티브도 내일 08:00으로 계산하므로 true
+    final tomorrow0800 = tz.TZDateTime(tz.local, 2026, 11, 11, 8, 0);
+    expect(NotificationService.canUseDailyRepeat(mockNow, tomorrow0800), true);
+
+    // 다음 주 화요일 23:06 (2026-11-17 23:06)
+    final nextTuesday2306 = tz.TZDateTime(tz.local, 2026, 11, 17, 23, 6);
+    // DayOfWeekAndTime 을 적용했을 때 네이티브 Java는 오늘 화요일 23:06으로 당겨버린다.
+    // 따라서 canUseWeeklyRepeat(mockNow, nextTuesday2306)은 반드시 false여야 함!
+    expect(NotificationService.canUseWeeklyRepeat(mockNow, nextTuesday2306), false);
+
+    // 반면, 요일이 다른 내일 수요일 23:06 (tomorrow2306)에 대해 DayOfWeekAndTime 은
+    // 네이티브 Java도 수요일 23:06으로 계산하므로 true
+    expect(NotificationService.canUseWeeklyRepeat(mockNow, tomorrow2306), true);
   });
 }
 

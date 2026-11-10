@@ -41,20 +41,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     NotificationService.notificationTappedHabitId.addListener(_onNotificationTappedHabit);
-    // 화면 진입 시 오늘 습관 목록 로드 후 대기 중인 알림 탭 처리
+    NotificationService.alarmLimitExceededNotifier.addListener(_onAlarmLimitExceeded);
+    // 화면 진입 시 오늘 습관 목록 로드(스플래시에서 프리로드되지 않은 경우) 후 대기 중인 알림 탭 처리
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await context.read<HabitProvider>().loadHabits();
+      final habitProvider = context.read<HabitProvider>();
+      if (habitProvider.habits.isEmpty && !habitProvider.isLoading) {
+        await habitProvider.loadHabits();
+      }
       if (!mounted) return;
       if (NotificationService.notificationTappedHabitId.value != null) {
         await _onNotificationTappedHabit();
       }
+      // 알림이 켜진 습관이 존재할 때 시스템 알림 권한 미허용 시 권한 요청
+      final hasActiveReminder = habitProvider.habits.any((h) => h.habit.reminderEnabled && !h.habit.isArchived);
+      if (hasActiveReminder) {
+        final isGranted = await NotificationService.checkSystemNotificationPermission();
+        if (!isGranted && mounted) {
+          await NotificationService.requestSystemNotificationPermission();
+        }
+      }
     });
+  }
+
+  void _onAlarmLimitExceeded() {
+    if (!mounted || !NotificationService.alarmLimitExceededNotifier.value) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('시스템 최대 알람 예약 한도(450개)를 초과하여 일부 알림이 생략되었습니다.'),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.fireOrange,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     NotificationService.notificationTappedHabitId.removeListener(_onNotificationTappedHabit);
+    NotificationService.alarmLimitExceededNotifier.removeListener(_onAlarmLimitExceeded);
     _highlightTimer?.cancel();
     _scrollController.dispose();
     super.dispose();

@@ -395,6 +395,34 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         ? DateUtil.formatTime(_reminderEndTime!.hour, _reminderEndTime!.minute)
         : null;
 
+    if (_reminderEnabled) {
+      // 1. Android 13+ 시스템 알림 표시 권한(POST_NOTIFICATIONS) 확인 및 요청
+      final hasNotifPerm = await NotificationService.checkSystemNotificationPermission();
+      if (!hasNotifPerm && mounted) {
+        final granted = await NotificationService.requestSystemNotificationPermission();
+        if (!granted && mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.notifications_off_rounded, color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('기기 설정에서 알림 권한을 허용해주셔야 설정한 알림이 울립니다.'),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.fireOrange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    }
+
+    if (!mounted) return;
     final habitProvider = context.read<HabitProvider>();
 
     if (_isEditing) {
@@ -438,6 +466,26 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
     }
 
     if (_reminderEnabled) {
+      if (NotificationService.isAlarmLimitExceeded && mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('시스템 최대 알람 예약 한도(450개)를 초과하여 일부 알림이 생략되었습니다. 알림 간격을 넓혀주세요.'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.fireOrange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+
       final canExact = await NotificationService.canScheduleExactAlarms();
       if (!canExact && mounted) {
         final shouldOpen = await showDialog<bool>(
@@ -460,7 +508,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
               ],
             ),
             content: Text(
-              'Android 14 이상에서는 시스템 "알람 및 리마인더" 권한을 허용해야 설정하신 시각에 1초 오차 없이 알람이 도착합니다.\n\n지금 설정 화면으로 이동할까요?',
+              'Android 14 이상에서는 시스템 "알람 및 리마인더" 권한을 허용해야 설정하신 시각에 맞춰 정시 알람이 도착합니다.\n(기기 절전 설정에 따라 일부 지연될 수 있습니다)\n\n지금 설정 화면으로 이동할까요?',
               style: TextStyle(color: ctx.textSecondary, fontSize: 13, height: 1.4),
             ),
             actions: [

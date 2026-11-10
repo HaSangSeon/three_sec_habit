@@ -8,6 +8,7 @@ class AdService {
   AdService._();
 
   static bool _isInitialized = false;
+  static Future<void>? _initFuture;
   static String _lastInterstitialShownDate = '';
   static double _cachedBannerHeight = 60.0;
 
@@ -19,11 +20,15 @@ class AdService {
     }
   }
 
-  /// AdMob SDK 초기화
-  static Future<void> initialize() async {
-    if (_isInitialized) return;
+  /// AdMob SDK 비동기 초기화 (타임아웃 보호 및 중복 호출 방지)
+  static Future<void> initialize() {
+    if (_isInitialized) return Future.value();
+    return _initFuture ??= _initializeInternal();
+  }
+
+  static Future<void> _initializeInternal() async {
     try {
-      await MobileAds.instance.initialize();
+      await MobileAds.instance.initialize().timeout(const Duration(seconds: 5));
       _isInitialized = true;
     } catch (e) {
       debugPrint('AdMob initialization error: $e');
@@ -61,7 +66,11 @@ class AdService {
     required Function() onAdLoaded,
     required Function(LoadAdError) onAdFailedToLoad,
   }) async {
+    if (!_isInitialized && _initFuture != null) {
+      await _initFuture;
+    }
     if (!_isInitialized) return null;
+    // ignore: deprecated_member_use
     final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
     if (size == null) return null;
 

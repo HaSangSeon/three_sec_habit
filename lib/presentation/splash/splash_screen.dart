@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../providers/habit_provider.dart';
 import '../home/home_screen.dart';
 
 /// 3초 습관 앱 시작 시 노출되는 프리미엄 스플래시 화면
@@ -22,10 +24,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 650),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.90, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
 
@@ -35,8 +37,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // 1.8초 후 홈 화면으로 부드럽게 전환
-    Future.delayed(const Duration(milliseconds: 1800), () {
+    // 스플래시 애니메이션 동안 DB 습관 목록을 병렬 프리로드하고 빠르게 홈 화면으로 진입
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<HabitProvider>().loadHabits();
+    });
+
+    Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
@@ -45,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen>
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
-            transitionDuration: const Duration(milliseconds: 400),
+            transitionDuration: const Duration(milliseconds: 250),
           ),
         );
       }
