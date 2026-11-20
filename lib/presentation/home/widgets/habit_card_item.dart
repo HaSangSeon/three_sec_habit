@@ -149,18 +149,42 @@ class _HabitCardItemState extends State<HabitCardItem>
       constraints: const BoxConstraints(minHeight: 78),
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       decoration: BoxDecoration(
-        color: isDone
-            ? (context.isDarkMode
-                ? const Color(0xFF13232C)
-                : const Color(0xFFF0FDF4))
-            : context.surface,
+        gradient: isDone
+            ? LinearGradient(
+                colors: context.isDarkMode
+                    ? const [Color(0xFF12272E), Color(0xFF0F1F26)]
+                    : const [Color(0xFFF0FDF4), Color(0xFFECFDF5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: context.isDarkMode
+                    ? [
+                        Color.alphaBlend(
+                          habitColor.withValues(alpha: 0.045),
+                          context.surface,
+                        ),
+                        context.surface,
+                      ]
+                    : [
+                        Colors.white,
+                        Color.alphaBlend(
+                          habitColor.withValues(alpha: 0.025),
+                          context.surface,
+                        ),
+                      ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: widget.isHighlighted
               ? AppColors.primary
               : isDone
-                  ? AppColors.success.withValues(alpha: 0.4)
-                  : context.surfaceBorder,
+                  ? AppColors.success.withValues(alpha: context.isDarkMode ? 0.45 : 0.42)
+                  : (context.isDarkMode
+                      ? context.surfaceBorder.withValues(alpha: 0.9)
+                      : context.surfaceBorder.withValues(alpha: 0.85)),
           width: widget.isHighlighted ? 2.5 : (isDone ? 1.4 : 1.0),
         ),
         boxShadow: [
@@ -173,24 +197,49 @@ class _HabitCardItemState extends State<HabitCardItem>
             )
           else if (isDone)
             BoxShadow(
-              color: AppColors.success.withValues(alpha: 0.08),
+              color: AppColors.success.withValues(alpha: context.isDarkMode ? 0.14 : 0.10),
               blurRadius: 14,
               offset: const Offset(0, 4),
             )
           else if (!context.isDarkMode)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+              color: habitColor.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          if (!widget.isHighlighted && !context.isDarkMode)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 1.5),
             ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.fromLTRB(12, 14, 16, 14),
           child: Row(
                 children: [
+                  // 좌측 세로 컬러 액센트 바 (습관 고유 컬러 / 완료 시 에메랄드)
+                  Container(
+                    width: 4,
+                    height: 44,
+                    margin: const EdgeInsets.only(right: 11),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDone
+                            ? const [Color(0xFF34D399), Color(0xFF059669)]
+                            : [
+                                habitColor,
+                                habitColor.withValues(alpha: 0.55),
+                              ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   // 1. 좌측 습관 정보 영역 (탭 시 편집/상세 진입)
                   Expanded(
                     child: InkWell(
@@ -205,17 +254,27 @@ class _HabitCardItemState extends State<HabitCardItem>
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  habitColor.withValues(alpha: isDone ? 0.15 : 0.28),
-                                  habitColor.withValues(alpha: isDone ? 0.08 : 0.14),
+                                  habitColor.withValues(alpha: isDone ? 0.16 : 0.28),
+                                  habitColor.withValues(alpha: isDone ? 0.08 : 0.13),
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color: habitColor.withValues(alpha: isDone ? 0.2 : 0.4),
+                                color: habitColor.withValues(alpha: isDone ? 0.24 : 0.42),
                                 width: 1.2,
                               ),
+                              boxShadow: isDone
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: habitColor.withValues(
+                                            alpha: context.isDarkMode ? 0.18 : 0.14),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                             ),
                             child: Icon(
                               AppIcons.getIcon(habit.iconName),

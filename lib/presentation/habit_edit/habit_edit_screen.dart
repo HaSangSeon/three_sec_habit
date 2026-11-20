@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:three_sec_habit/core/constants/app_colors.dart';
 import 'package:three_sec_habit/core/constants/app_icons.dart';
+import 'package:three_sec_habit/core/constants/app_sounds.dart';
 import 'package:three_sec_habit/core/services/notification_service.dart';
 import 'package:three_sec_habit/core/utils/date_util.dart';
 import 'package:three_sec_habit/models/habit.dart';
@@ -11,6 +12,7 @@ import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_delete_dia
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_icon_color_card.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_reminder_card.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_repeat_card.dart';
+import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_sound_card.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_target_count_card.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/habit_title_card.dart';
 import 'package:three_sec_habit/presentation/habit_edit/widgets/senior_habit_presets_card.dart';
@@ -60,6 +62,9 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
   TimeOfDay? _reminderStartTime;
   TimeOfDay? _reminderEndTime;
 
+  late String _selectedSoundKey;
+  late bool _isSoundManuallySelected;
+
   late int _currentTabIndex;
 
   bool get _isEditing => widget.habit != null;
@@ -89,6 +94,14 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
 
     _selectedIconKey = h?.iconName ?? 'water_drop';
     _selectedColorValue = h?.colorValue ?? 0xFF8B5CF6;
+    if (h != null) {
+      _selectedSoundKey = h.soundKey;
+      final autoForIcon = AppSounds.suggestSoundForIcon(_selectedIconKey);
+      _isSoundManuallySelected = _selectedSoundKey != autoForIcon;
+    } else {
+      _selectedSoundKey = AppSounds.suggestSoundForIcon(_selectedIconKey);
+      _isSoundManuallySelected = false;
+    }
     _repeatType = h?.repeatType ?? RepeatType.daily;
     _repeatDays = h?.repeatDays != null
         ? List<int>.from(h!.repeatDays)
@@ -145,6 +158,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
 
   @override
   void dispose() {
+    NotificationService.stopPreviewSound();
     _titleController.dispose();
     _unitController.dispose();
     super.dispose();
@@ -215,6 +229,8 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
       _titleController.text = preset.title;
       _selectedIconKey = preset.iconKey;
       _selectedColorValue = preset.colorValue;
+      _selectedSoundKey = AppSounds.suggestSoundForIcon(preset.iconKey);
+      _isSoundManuallySelected = false;
       _reminderEnabled = true;
       _reminderType = preset.reminderType;
       if (preset.reminderType == ReminderType.fixed) {
@@ -263,6 +279,17 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
       title: '${index + 1}차 알림 시간 변경',
     );
     if (picked != null) {
+      final duplicated = _reminderTimes.asMap().entries.any(
+            (e) => e.key != index && e.value.hour == picked.hour && e.value.minute == picked.minute,
+          );
+      if (duplicated) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('이미 등록된 알림 시간입니다.')),
+          );
+        }
+        return;
+      }
       setState(() {
         _reminderTimes[index] = picked;
         _sortReminderTimes();
@@ -442,6 +469,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         reminderIntervalMinutes: _reminderIntervalMinutes,
         reminderStartTime: reminderStartStr,
         reminderEndTime: reminderEndStr,
+        soundKey: _selectedSoundKey,
       );
       await habitProvider.updateHabit(updated);
     } else {
@@ -461,6 +489,7 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
         reminderIntervalMinutes: _reminderIntervalMinutes,
         reminderStartTime: reminderStartStr,
         reminderEndTime: reminderEndStr,
+        soundKey: _selectedSoundKey,
       );
       await habitProvider.addHabit(newHabit);
     }
@@ -639,29 +668,32 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
           const AdBannerSlot(),
           SafeArea(
             top: false,
-            child: SizedBox(
-              height: 54,
-              child: Row(
-                children: [
-                  _buildTabItem(
-                    index: 0,
-                    icon: Icons.check_circle_outline_rounded,
-                    activeIcon: Icons.check_circle_rounded,
-                    label: '오늘의 습관',
-                  ),
-                  _buildTabItem(
-                    index: 1,
-                    icon: Icons.bar_chart_outlined,
-                    activeIcon: Icons.bar_chart_rounded,
-                    label: '통계/기록',
-                  ),
-                  _buildTabItem(
-                    index: 2,
-                    icon: Icons.settings_outlined,
-                    activeIcon: Icons.settings_rounded,
-                    label: '설정',
-                  ),
-                ],
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    _buildTabItem(
+                      index: 0,
+                      icon: Icons.check_circle_outline_rounded,
+                      activeIcon: Icons.check_circle_rounded,
+                      label: '오늘의 습관',
+                    ),
+                    _buildTabItem(
+                      index: 1,
+                      icon: Icons.bar_chart_outlined,
+                      activeIcon: Icons.bar_chart_rounded,
+                      label: '통계/기록',
+                    ),
+                    _buildTabItem(
+                      index: 2,
+                      icon: Icons.settings_outlined,
+                      activeIcon: Icons.settings_rounded,
+                      label: '설정',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1001,10 +1033,33 @@ class _HabitEditScreenState extends State<HabitEditScreen> {
                 selectedIconKey: _selectedIconKey,
                 selectedColorValue: _selectedColorValue,
                 onIconSelected: (key) {
-                  setState(() => _selectedIconKey = key);
+                  setState(() {
+                    _selectedIconKey = key;
+                    if (!_isSoundManuallySelected) {
+                      _selectedSoundKey = AppSounds.suggestSoundForIcon(key);
+                    }
+                  });
                 },
                 onColorSelected: (val) {
                   setState(() => _selectedColorValue = val);
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // 2-1. 알림 사운드 선택 카드 (아이콘 선택 및 추천 습관에 따라 자동 선택, 수동 변경 가능)
+              _buildSectionHeader(
+                icon: Icons.record_voice_over_rounded,
+                title: '알림 사운드',
+              ),
+              HabitSoundCard(
+                selectedSoundKey: _selectedSoundKey,
+                isAutoSelected: !_isSoundManuallySelected,
+                accentColor: currentColor,
+                onSoundSelected: (soundKey) {
+                  setState(() {
+                    _selectedSoundKey = soundKey;
+                    _isSoundManuallySelected = true;
+                  });
                 },
               ),
               const SizedBox(height: 22),

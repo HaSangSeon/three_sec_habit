@@ -147,7 +147,7 @@ class HomeWidgetService {
     try {
       await HomeWidget.setAppGroupId(AppConstants.appGroupId);
       final scheduledHabits =
-          habits.where((h) => h.isScheduledToday).toList();
+          habits.where((h) => h.isScheduledToday || h.isCompletedToday).toList();
       final activeList = scheduledHabits;
 
       final todayStr = DateUtil.formatForDisplay(DateTime.now());

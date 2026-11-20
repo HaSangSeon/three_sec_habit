@@ -64,6 +64,7 @@ class DatabaseHelper {
         reminder_start_time TEXT,
         reminder_end_time TEXT,
         reminder_enabled INTEGER NOT NULL DEFAULT 0,
+        sound_key TEXT NOT NULL DEFAULT 'default',
         created_at TEXT NOT NULL,
         is_archived INTEGER NOT NULL DEFAULT 0
       )
@@ -118,6 +119,10 @@ class DatabaseHelper {
       // HabitLogs 테이블 count 컬럼 추가
       await db.execute(
           "ALTER TABLE ${AppConstants.tableHabitLogs} ADD COLUMN count INTEGER NOT NULL DEFAULT 1");
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+          "ALTER TABLE ${AppConstants.tableHabits} ADD COLUMN sound_key TEXT NOT NULL DEFAULT 'default'");
     }
   }
 

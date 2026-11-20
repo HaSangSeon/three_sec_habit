@@ -425,7 +425,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 SwitchListTile(
-                  secondary: const Icon(Icons.notifications_active_rounded, color: AppColors.primaryLight, size: 22),
+                  secondary: _buildTileLeadingIcon(
+                    Icons.notifications_active_rounded,
+                    AppColors.primaryLight,
+                  ),
                   title: Text(
                     '전체 푸시 알림',
                     style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
@@ -454,10 +457,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
                   Divider(color: context.surfaceBorder, height: 1),
                   ListTile(
-                    leading: Icon(
+                    leading: _buildTileLeadingIcon(
                       _exactAlarmAllowed ? Icons.alarm_on_rounded : Icons.alarm_off_rounded,
-                      color: _exactAlarmAllowed ? AppColors.success : AppColors.fireOrange,
-                      size: 22,
+                      _exactAlarmAllowed ? AppColors.success : AppColors.fireOrange,
                     ),
                     title: Text(
                       '정시 알람 권한 (Android 14+)',
@@ -518,13 +520,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
                 Divider(color: context.surfaceBorder, height: 1),
                 ListTile(
-                  leading: const Icon(Icons.send_rounded, color: AppColors.primaryLight, size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.send_rounded,
+                    AppColors.primaryLight,
+                  ),
                   title: Text(
                     '테스트 알림 발송',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '지금 즉시 상단바 알림 수신 상태를 점검합니다',
+                    '지금 즉시 상단바 알림 수신 상태를 점검해요',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -543,13 +548,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(color: context.surfaceBorder, height: 1),
                 ListTile(
-                  leading: const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.bolt_rounded,
+                    const Color(0xFFF59E0B),
+                  ),
                   title: Text(
-                    '정시 알림 및 배터리 절전 예외 팁',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    '알림이 안 오거나 늦게 올 때',
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '삼성 갤럭시, 샤오미 등 기기별 알림 지연 방지 설정',
+                    '삼성 갤럭시 등 기기별 배터리 절전 해제 안내',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -572,13 +580,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.file_download_outlined, color: AppColors.primaryLight, size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.file_download_outlined,
+                    const Color(0xFF0EA5E9),
+                  ),
                   title: Text(
                     '데이터 백업 (내보내기)',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '습관 및 실천 기록을 JSON 파일로 백업/공유합니다',
+                    '습관 및 실천 기록을 파일로 안전하게 보관해요',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -586,13 +597,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(color: context.surfaceBorder, height: 1),
                 ListTile(
-                  leading: const Icon(Icons.file_upload_outlined, color: AppColors.primaryLight, size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.file_upload_outlined,
+                    const Color(0xFF10B981),
+                  ),
                   title: Text(
                     '데이터 복원 (가져오기)',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '백업된 JSON 파일로부터 습관과 기록을 복구합니다',
+                    '저장해 둔 백업 파일에서 습관과 기록을 불러와요',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -615,13 +629,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.menu_book_rounded, color: AppColors.primaryLight, size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.menu_book_rounded,
+                    AppColors.primaryLight,
+                  ),
                   title: Text(
                     '3초 습관 사용 가이드',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '핵심 기능 및 꿀팁 확인하기',
+                    '음성 알림·홈 위젯·달력 활용 팁 한눈에 보기',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -629,13 +646,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(color: context.surfaceBorder, height: 1),
                 ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.primaryLight, size: 22),
+                  leading: _buildTileLeadingIcon(
+                    Icons.privacy_tip_outlined,
+                    const Color(0xFF10B981),
+                  ),
                   title: Text(
                     '개인정보 처리방침',
-                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w600, fontSize: 14.5),
+                    style: TextStyle(color: context.textPrimary, fontWeight: FontWeight.w700, fontSize: 14.5),
                   ),
                   subtitle: Text(
-                    '안전한 로컬 데이터 처리 및 보안 안내',
+                    '기기 내 로컬 저장 및 데이터 보안 안내',
                     style: TextStyle(color: context.textMuted, fontSize: 12),
                   ),
                   trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted),
@@ -735,6 +755,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildTileLeadingIcon(IconData icon, Color color) {
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.13),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
   Widget _buildThemeOption({
     required String label,
     required IconData icon,
@@ -820,48 +852,293 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _handleRestore(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: context.surfaceBorder),
-        ),
-        title: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              '데이터 복원 확인',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontSize: 17,
-              ),
+      builder: (ctx) {
+        final isDark = ctx.isDarkMode;
+        const accent = Color(0xFF10B981);
+        const warningColor = Color(0xFFF59E0B);
+
+        return Dialog(
+          backgroundColor: ctx.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(26),
+            side: BorderSide(
+              color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
+              width: 1,
             ),
-          ],
-        ),
-        content: Text(
-          '백업 파일을 가져오면 현재 기기의 데이터가 백업 파일의 내용으로 복원 및 교체됩니다.\n\n계속 진행하시겠습니까?',
-          style: TextStyle(color: context.textSecondary, fontSize: 13.5, height: 1.4),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('취소', style: TextStyle(color: context.textMuted)),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. 프리미엄 그라데이션 헤더
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accent.withValues(alpha: isDark ? 0.24 : 0.14),
+                      accent.withValues(alpha: isDark ? 0.08 : 0.04),
+                      ctx.surface,
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(26)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.file_upload_outlined,
+                                  size: 13, color: accent),
+                              SizedBox(width: 5),
+                              Text(
+                                '백업 파일 복구',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => Navigator.of(ctx).pop(false),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.10)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: ctx.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '데이터 복원 (가져오기)',
+                      style: TextStyle(
+                        color: ctx.textPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 19,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '백업해 둔 JSON 파일을 선택해 습관과 실천 기록을 복원해요.',
+                      style: TextStyle(
+                        color: ctx.textSecondary,
+                        fontSize: 12.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: const Text('복원 진행', style: TextStyle(fontWeight: FontWeight.w700)),
+              Divider(
+                height: 1,
+                color: ctx.surfaceBorder.withValues(alpha: 0.6),
+              ),
+
+              // 2. 주의 안내 카드 본문
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                child: Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: warningColor.withValues(
+                          alpha: isDark ? 0.12 : 0.08,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: warningColor.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: warningColor.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              color: warningColor,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 11),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '기존 데이터 교체 안내',
+                                  style: TextStyle(
+                                    color: ctx.textPrimary,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '복원을 진행하면 현재 휴대폰에 저장된 습관 목록과 기록이 선택한 백업 파일 내용으로 모두 교체됩니다.',
+                                  style: TextStyle(
+                                    color: ctx.textSecondary,
+                                    fontSize: 12.2,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: ctx.surfaceBorder.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.notifications_active_outlined,
+                            color: AppColors.primaryLight,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '복원 완료 후 알림 스케줄과 바탕화면 위젯도 자동으로 동기화됩니다.',
+                              style: TextStyle(
+                                color: ctx.textSecondary,
+                                fontSize: 12,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 3. 하단 균형 액션 버튼 바
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                decoration: BoxDecoration(
+                  color: ctx.surface,
+                  border: Border(
+                    top: BorderSide(color: ctx.surfaceBorder, width: 0.8),
+                  ),
+                  borderRadius:
+                      const BorderRadius.vertical(bottom: Radius.circular(26)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: SizedBox(
+                        height: 46,
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ctx.textSecondary,
+                            side: BorderSide(color: ctx.surfaceBorder),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            '취소',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 14),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        height: 46,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.folder_open_rounded, size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                '백업 파일 선택하기',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w800, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
 
     if (confirmed != true || !context.mounted) return;
@@ -903,6 +1180,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _handlePinWidget({required bool is4x2}) async {
     final name = is4x2 ? '4x2 체크리스트 위젯' : '2x2 퀵 대시보드 위젯';
+    try {
+      final todayHabits =
+          await context.read<HabitProvider>().getTodayHabitsStatus();
+      await HomeWidgetService.updateWidgetData(todayHabits);
+    } catch (_) {}
     final success = is4x2
         ? await HomeWidgetService.pinWidget4x2()
         : await HomeWidgetService.pinWidget2x2();

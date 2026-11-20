@@ -117,15 +117,25 @@ class DayOfWeekChart extends StatelessWidget {
           // 인사이트 요약 칩
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
             decoration: BoxDecoration(
-              color: context.isDarkMode
-                  ? const Color(0xFF1E293B)
-                  : const Color(0xFFF8FAFC),
+              gradient: LinearGradient(
+                colors: context.isDarkMode
+                    ? [
+                        AppColors.primary.withValues(alpha: 0.16),
+                        const Color(0xFF1E293B),
+                      ]
+                    : [
+                        AppColors.primary.withValues(alpha: 0.08),
+                        const Color(0xFFF8FAFC),
+                      ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: context.surfaceBorder,
-                width: 0.8,
+                color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.28 : 0.18),
+                width: 0.9,
               ),
             ),
             child: Text(
@@ -133,7 +143,7 @@ class DayOfWeekChart extends StatelessWidget {
               style: TextStyle(
                 color: totalCount > 0 ? context.textPrimary : context.textMuted,
                 fontSize: 12.5,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -148,10 +158,10 @@ class DayOfWeekChart extends StatelessWidget {
               final isBest = maxCount > 0 && count == maxCount;
               final isWeekend = dayNum >= 6;
 
-              // 0일 때도 최소 6px 표시, 최대치는 44px
+              // 0일 때도 최소 6px 표시, 최대치는 52px
               final double barHeight = maxCount == 0
                   ? 6.0
-                  : (6.0 + (count / maxCount) * 38.0);
+                  : (6.0 + (count / maxCount) * 46.0);
 
               return Expanded(
                 child: Column(
@@ -173,63 +183,85 @@ class DayOfWeekChart extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
 
-                    // 막대 바 영역 (높이 48 고정 프레임 내에서 하단 정렬)
+                    // 막대 바 영역 (높이 56 고정 프레임 + 연한 가이드 트랙)
                     SizedBox(
-                      height: 48,
-                      child: Align(
+                      height: 56,
+                      child: Stack(
                         alignment: Alignment.bottomCenter,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOutCubic,
-                          width: 16,
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            gradient: isBest
-                                ? const LinearGradient(
-                                    colors: [
-                                      AppColors.primary,
-                                      AppColors.accent,
-                                    ],
-                                    begin: Alignment.bottomCenter,
-                                    end: Alignment.topCenter,
-                                  )
-                                : null,
-                            color: isBest
-                                ? null
-                                : count > 0
-                                    ? (context.isDarkMode
-                                        ? const Color(0xFF3B82F6).withValues(alpha: 0.45)
-                                        : const Color(0xFF93C5FD))
-                                    : (context.isDarkMode
-                                        ? Colors.white10
-                                        : const Color(0xFFE2E8F0)),
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: isBest
-                                ? [
-                                    BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.35),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: context.isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.04)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(9),
+                            ),
                           ),
-                        ),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOutCubic,
+                            width: 20,
+                            height: barHeight,
+                            decoration: BoxDecoration(
+                              gradient: isBest
+                                  ? const LinearGradient(
+                                      colors: [
+                                        Color(0xFF7C3AED),
+                                        Color(0xFF38BDF8),
+                                      ],
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                    )
+                                  : null,
+                              color: isBest
+                                  ? null
+                                  : count > 0
+                                      ? (context.isDarkMode
+                                          ? const Color(0xFF3B82F6).withValues(alpha: 0.55)
+                                          : const Color(0xFF93C5FD))
+                                      : (context.isDarkMode
+                                          ? Colors.white10
+                                          : const Color(0xFFE2E8F0)),
+                              borderRadius: BorderRadius.circular(9),
+                              boxShadow: isBest
+                                  ? [
+                                      BoxShadow(
+                                        color: AppColors.primary.withValues(alpha: 0.38),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 8),
 
                     // 요일 라벨
-                    Text(
-                      _weekdayLabels[index],
-                      style: TextStyle(
-                        color: isBest
-                            ? AppColors.primary
-                            : isWeekend
-                                ? (dayNum == 7 ? Colors.red.shade400 : Colors.blue.shade400)
-                                : context.textSecondary,
-                        fontSize: 12,
-                        fontWeight: isBest ? FontWeight.w800 : FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: isBest
+                          ? BoxDecoration(
+                              color: AppColors.primary.withValues(
+                                  alpha: context.isDarkMode ? 0.22 : 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            )
+                          : null,
+                      child: Text(
+                        _weekdayLabels[index],
+                        style: TextStyle(
+                          color: isBest
+                              ? (context.isDarkMode ? AppColors.primaryLight : AppColors.primary)
+                              : isWeekend
+                                  ? (dayNum == 7 ? Colors.red.shade400 : Colors.blue.shade400)
+                                  : context.textSecondary,
+                          fontSize: 12,
+                          fontWeight: isBest ? FontWeight.w800 : FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],

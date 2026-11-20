@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import '../constants/app_sounds.dart';
 import '../../models/habit.dart';
 import '../../models/habit_with_today_status.dart';
 
@@ -26,6 +28,62 @@ class NotificationService {
   static const String channelName = '습관 실천 알림';
   static const String channelDesc = '설정된 시간과 간격에 맞춰 습관 실천을 알립니다.';
   static const String prefAllNotificationsKey = 'all_notifications_enabled';
+  static const MethodChannel _soundChannel =
+      MethodChannel('com.hasangseon.three_sec_habit/sound');
+
+  /// 사운드 키에 대응하는 Android 알림 채널 ID 반환
+  static String _channelIdForSound(String soundKey) {
+    final info = AppSounds.getSound(soundKey);
+    if (info.isDefault) return channelId;
+    return 'three_sec_habit_${info.key}_v1';
+  }
+
+  /// 사운드 미리듣기 (Android 네이티브 MediaPlayer / Ringtone)
+  static Future<void> playPreviewSound(String soundKey) async {
+    try {
+      await _soundChannel.invokeMethod('playPreview', {'soundKey': soundKey});
+    } catch (e) {
+      debugPrint('Preview sound error: $e');
+    }
+  }
+
+  /// 사운드 미리듣기 정지
+  static Future<void> stopPreviewSound() async {
+    try {
+      await _soundChannel.invokeMethod('stopPreview');
+    } catch (_) {}
+  }
+
+  /// 모든 사운드 프리셋용 Android 알림 채널 일괄 등록
+  static Future<void> _createAllSoundChannels(
+      AndroidFlutterLocalNotificationsPlugin androidPlatform) async {
+    await androidPlatform.createNotificationChannel(
+      const AndroidNotificationChannel(
+        channelId,
+        channelName,
+        description: channelDesc,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      ),
+    );
+    for (final s in AppSounds.sounds) {
+      if (s.isDefault) continue;
+      await androidPlatform.createNotificationChannel(
+        AndroidNotificationChannel(
+          _channelIdForSound(s.key),
+          '습관 알림 (${s.label})',
+          description: s.description,
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(s.key),
+          enableVibration: true,
+          showBadge: true,
+        ),
+      );
+    }
+  }
 
   /// 알림 탭 시 해당 습관으로 직행하기 위한 전역 노티파이어
   static final ValueNotifier<int?> notificationTappedHabitId = ValueNotifier<int?>(null);
@@ -111,22 +169,12 @@ class NotificationService {
         _handleNotificationPayload(launchDetails!.notificationResponse!.payload!);
       }
 
-      // 안드로이드 알림 채널 등록 (헤드업 팝업 보장을 위해 Importance.max)
+      // 안드로이드 알림 채널 등록 (헤드업 팝업 보장을 위해 Importance.max + 사운드별 채널 일괄 등록)
       final androidPlatform = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlatform != null) {
-        await androidPlatform.createNotificationChannel(
-          const AndroidNotificationChannel(
-            channelId,
-            channelName,
-            description: channelDesc,
-            importance: Importance.max,
-            playSound: true,
-            enableVibration: true,
-            showBadge: true,
-          ),
-        );
+        await _createAllSoundChannels(androidPlatform);
 
         if (requestPermissionOnStart) {
           await androidPlatform.requestNotificationsPermission();
@@ -151,6 +199,12 @@ class NotificationService {
 
     try {
       await _notificationsPlugin.initialize(settings: initSettings);
+      final androidPlatform = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlatform != null) {
+        await _createAllSoundChannels(androidPlatform);
+      }
       debugPrint('⚡ [NotificationService] Background isolate initialized successfully');
     } catch (e) {
       debugPrint('NotificationService initializeForBackground error: $e');
@@ -557,15 +611,25 @@ class NotificationService {
         body = '⚡ [$title] 실천할 시간이에요! 3초 만에 완료해보세요.';
       }
 
+      final soundInfo = AppSounds.getSound(habit.soundKey);
+      final targetChannelId = _channelIdForSound(soundInfo.key);
+      final targetChannelName =
+          soundInfo.isDefault ? channelName : '습관 알림 (${soundInfo.label})';
+      final targetChannelDesc =
+          soundInfo.isDefault ? channelDesc : soundInfo.description;
+
       final notificationDetails = NotificationDetails(
         android: AndroidNotificationDetails(
-          channelId,
-          channelName,
-          channelDescription: channelDesc,
+          targetChannelId,
+          targetChannelName,
+          channelDescription: targetChannelDesc,
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/launcher_icon',
           playSound: true,
+          sound: soundInfo.isDefault
+              ? null
+              : RawResourceAndroidNotificationSound(soundInfo.key),
           enableVibration: true,
           groupKey: 'habit_${habit.id}',
           category: AndroidNotificationCategory.reminder,
@@ -767,8 +831,12 @@ class NotificationService {
           endTotalMin += 24 * 60;
         }
 
+        final int slotCount = ((endTotalMin - startTotalMin) ~/ intervalMinutes + 1).clamp(1, 48);
+        final bool canExpand7Days =
+            (_scheduledAlarmCount + slotCount * 7) <= _maxScheduledAlarms;
+
         if (isWeeklyDone) {
-          // 주 N회 목표 완료 시 차주 월요일부터 슬롯당 1개의 일일 반복 알람으로 등록 (48슬롯 = 48개 알람)
+          // 주 N회 목표 완료 시 이번 주는 건너뛰고 차주 월요일부터 스케줄 등록
           int daysUntilNextMonday = (DateTime.monday - now.weekday + 7) % 7;
           if (daysUntilNextMonday == 0) daysUntilNextMonday = 7;
 
@@ -782,7 +850,7 @@ class NotificationService {
             final slotMin = currentSlotMin % 60;
             final extraDays = rawHour >= 24 ? 1 : 0;
 
-            final scheduledDate = tz.TZDateTime(
+            final nextMondayDate = tz.TZDateTime(
               tz.local,
               now.year,
               now.month,
@@ -791,21 +859,62 @@ class NotificationService {
               slotMin,
             ).add(Duration(days: daysUntilNextMonday + extraDays));
 
-            final notifId = _generateNotificationId(habit.id!, slotIdx);
-            final canRepeat = canUseDailyRepeat(now, scheduledDate);
-            await _safeZonedSchedule(
-              id: notifId,
-              title: title,
-              body: body,
-              scheduledDate: scheduledDate,
-              notificationDetails: notificationDetails,
-              androidScheduleMode: scheduleMode,
-              matchDateTimeComponents: canRepeat ? DateTimeComponents.time : null,
-              payload: 'habit_${habit.id}_slot_$slotIdx',
-              expectedGeneration: gen,
-            );
-            if (!canRepeat) {
-              final midnight = tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
+            if (canUseDailyRepeat(now, nextMondayDate)) {
+              // 일요일 지나간 시각 등: 네이티브 당겨짐 없이 월요일부터 매일 반복 1개로 충분
+              final notifId = _generateNotificationId(habit.id!, slotIdx);
+              await _safeZonedSchedule(
+                id: notifId,
+                title: title,
+                body: body,
+                scheduledDate: nextMondayDate,
+                notificationDetails: notificationDetails,
+                androidScheduleMode: scheduleMode,
+                matchDateTimeComponents: DateTimeComponents.time,
+                payload: 'habit_${habit.id}_slot_$slotIdx',
+                expectedGeneration: gen,
+              );
+            } else if (canExpand7Days) {
+              // 알람 예산 여유 시: 차주 7일 요일별 분산 등록으로 이번 주 스킵 + 장기 반복 동시 만족
+              for (int d = 0; d < 7; d++) {
+                if (gen != _scheduleGeneration || !_globalNotificationsEnabledCache) return;
+                final dayDate = nextMondayDate.add(Duration(days: d));
+                final subId = ((dayDate.weekday - 1) * 50 + slotIdx) % 1000;
+                final notifId = _generateNotificationId(habit.id!, subId);
+                final canRepeat = canUseWeeklyRepeat(now, dayDate);
+                await _safeZonedSchedule(
+                  id: notifId,
+                  title: title,
+                  body: body,
+                  scheduledDate: dayDate,
+                  notificationDetails: notificationDetails,
+                  androidScheduleMode: scheduleMode,
+                  matchDateTimeComponents:
+                      canRepeat ? DateTimeComponents.dayOfWeekAndTime : null,
+                  payload: 'habit_${habit.id}_day_${dayDate.weekday}_slot_$slotIdx',
+                  expectedGeneration: gen,
+                );
+                if (!canRepeat) {
+                  final midnight =
+                      tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
+                  _registerRolloverTime(midnight);
+                }
+              }
+            } else {
+              // 다수의 초대형 간격 습관으로 450개 상한 임박 시: 차주 월요일 1회 + 자정 롤오버
+              final notifId = _generateNotificationId(habit.id!, slotIdx);
+              await _safeZonedSchedule(
+                id: notifId,
+                title: title,
+                body: body,
+                scheduledDate: nextMondayDate,
+                notificationDetails: notificationDetails,
+                androidScheduleMode: scheduleMode,
+                matchDateTimeComponents: null,
+                payload: 'habit_${habit.id}_slot_$slotIdx',
+                expectedGeneration: gen,
+              );
+              final midnight =
+                  tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
               _registerRolloverTime(midnight);
             }
 
@@ -834,7 +943,7 @@ class NotificationService {
 
             if (isCompletedToday) {
               // 오늘 이미 완료된 경우: 오늘 남은 알림은 당겨짐 방지를 위해 검증 후 등록
-              final scheduledDate = tz.TZDateTime(
+              final tomorrowDate = tz.TZDateTime(
                 tz.local,
                 now.year,
                 now.month,
@@ -843,20 +952,62 @@ class NotificationService {
                 slotMin,
               ).add(Duration(days: 1 + extraDays));
 
-              final canRepeat = canUseDailyRepeat(now, scheduledDate);
-              await _safeZonedSchedule(
-                id: notifId,
-                title: title,
-                body: body,
-                scheduledDate: scheduledDate,
-                notificationDetails: notificationDetails,
-                androidScheduleMode: scheduleMode,
-                matchDateTimeComponents: canRepeat ? DateTimeComponents.time : null,
-                payload: 'habit_${habit.id}_slot_$slotIdx',
-                expectedGeneration: gen,
-              );
-              if (!canRepeat) {
-                final midnight = tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
+              if (canUseDailyRepeat(now, tomorrowDate)) {
+                await _safeZonedSchedule(
+                  id: notifId,
+                  title: title,
+                  body: body,
+                  scheduledDate: tomorrowDate,
+                  notificationDetails: notificationDetails,
+                  androidScheduleMode: scheduleMode,
+                  matchDateTimeComponents: DateTimeComponents.time,
+                  payload: 'habit_${habit.id}_slot_$slotIdx',
+                  expectedGeneration: gen,
+                );
+              } else if (canExpand7Days) {
+                // 오늘 남은 시각: 내일~6일 후는 영구 주간반복, 7일 후는 1회성+자정롤오버
+                for (int dayOffset = 1; dayOffset <= 7; dayOffset++) {
+                  if (gen != _scheduleGeneration || !_globalNotificationsEnabledCache) return;
+                  final dayDate = tz.TZDateTime(
+                    tz.local,
+                    now.year,
+                    now.month,
+                    now.day,
+                    slotHour,
+                    slotMin,
+                  ).add(Duration(days: dayOffset + extraDays));
+                  final subId = ((dayDate.weekday - 1) * 50 + slotIdx) % 1000;
+                  final canRepeat = canUseWeeklyRepeat(now, dayDate);
+                  await _safeZonedSchedule(
+                    id: _generateNotificationId(habit.id!, subId),
+                    title: title,
+                    body: body,
+                    scheduledDate: dayDate,
+                    notificationDetails: notificationDetails,
+                    androidScheduleMode: scheduleMode,
+                    matchDateTimeComponents:
+                        canRepeat ? DateTimeComponents.dayOfWeekAndTime : null,
+                    payload: 'habit_${habit.id}_day_${dayDate.weekday}_slot_$slotIdx',
+                    expectedGeneration: gen,
+                  );
+                }
+                final midnight =
+                    tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
+                _registerRolloverTime(midnight);
+              } else {
+                await _safeZonedSchedule(
+                  id: notifId,
+                  title: title,
+                  body: body,
+                  scheduledDate: tomorrowDate,
+                  notificationDetails: notificationDetails,
+                  androidScheduleMode: scheduleMode,
+                  matchDateTimeComponents: null,
+                  payload: 'habit_${habit.id}_slot_$slotIdx',
+                  expectedGeneration: gen,
+                );
+                final midnight =
+                    tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, 0, 0, 5);
                 _registerRolloverTime(midnight);
               }
             } else {

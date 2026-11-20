@@ -80,6 +80,7 @@ class HabitWidgetProvider4x2 : HomeWidgetProvider() {
                 }
                 setRemoteAdapter(R.id.widget_list_view, serviceIntent)
                 setEmptyView(R.id.widget_list_view, R.id.widget_empty_view)
+                setOnClickPendingIntent(R.id.widget_empty_view, headerIntent)
 
                 // 리스트 아이템 클릭 템플릿 (FLAG_MUTABLE 필수)
                 val templateIntent = Intent(context, HomeWidgetBackgroundReceiver::class.java).apply {

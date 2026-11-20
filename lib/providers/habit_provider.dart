@@ -287,10 +287,11 @@ class HabitProvider extends ChangeNotifier {
   /// 습관 추가
   Future<int> addHabit(Habit habit) async {
     final insertedId = await _habitDao.insertHabit(habit);
-    final createdHabit = habit.copyWith(id: insertedId);
-    await NotificationService.scheduleHabitReminder(createdHabit);
-    await syncTodayWidgetAndNotification();
+    final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
     await loadHabits();
+    if (!isToday) {
+      await syncTodayWidgetAndNotification();
+    }
     return insertedId;
   }
 
@@ -303,30 +304,22 @@ class HabitProvider extends ChangeNotifier {
       await _habitDao.resyncHabitLogForDate(habitId: habit.id!, habit: habit, date: todayStr);
     }
 
-    // 수정한 습관의 오늘 기준 최신 완료 상태(매일, 주N회 달성 여부 등)를 가져와 알림 스케줄링 완벽 동기화
-    final todayHabits = await _habitDao.getHabitsWithStatusForDate(DateTime.now());
-    try {
-      final targetToday = todayHabits.firstWhere((h) => h.habit.id == habit.id);
-      await NotificationService.scheduleHabitReminder(
-        targetToday.habit,
-        isCompletedToday: targetToday.isCompletedToday,
-        isWeeklyCompleted: targetToday.isWeeklyCompleted,
-      );
-    } catch (_) {
-      // 삭제되거나 조회 불가한 경우 대비
-      await NotificationService.scheduleHabitReminder(habit);
-    }
-
-    await syncTodayWidgetAndNotification();
+    final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
     await loadHabits();
+    if (!isToday) {
+      await syncTodayWidgetAndNotification();
+    }
   }
 
   /// 습관 삭제
   Future<void> deleteHabit(int habitId) async {
     await NotificationService.cancelHabitReminder(habitId);
     await _habitDao.deleteHabit(habitId);
-    await syncTodayWidgetAndNotification();
+    final isToday = DateUtil.isSameDay(_selectedDate, DateTime.now());
     await loadHabits();
+    if (!isToday) {
+      await syncTodayWidgetAndNotification();
+    }
   }
 
   /// 선택 날짜 변경

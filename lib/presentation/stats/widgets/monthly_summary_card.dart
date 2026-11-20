@@ -89,21 +89,21 @@ class MonthlySummaryCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: AppColors.primary.withValues(alpha: context.isDarkMode ? 0.16 : 0.09),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.25),
                     width: 0.8,
                   ),
                 ),
                 child: Text(
                   '$year년',
-                  style: const TextStyle(
-                    color: AppColors.primaryLight,
+                  style: TextStyle(
+                    color: context.isDarkMode ? AppColors.primaryLight : AppColors.primary,
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -119,13 +119,20 @@ class MonthlySummaryCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: context.isDarkMode
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFF8FAFC),
+                    gradient: LinearGradient(
+                      colors: context.isDarkMode
+                          ? [
+                              const Color(0xFF064E3B).withValues(alpha: 0.28),
+                              const Color(0xFF1E293B),
+                            ]
+                          : const [Color(0xFFECFDF5), Color(0xFFF8FAFC)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: context.surfaceBorder,
-                      width: 0.8,
+                      color: AppColors.success.withValues(alpha: context.isDarkMode ? 0.25 : 0.22),
+                      width: 0.9,
                     ),
                   ),
                   child: Column(
@@ -133,7 +140,7 @@ class MonthlySummaryCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.check_circle_outline_rounded, size: 14, color: AppColors.successLight),
+                          const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.success),
                           const SizedBox(width: 5),
                           Flexible(
                             child: Text(
@@ -143,7 +150,7 @@ class MonthlySummaryCard extends StatelessWidget {
                               style: TextStyle(
                                 color: context.textSecondary,
                                 fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -154,7 +161,7 @@ class MonthlySummaryCard extends StatelessWidget {
                         '$totalMonthCompletions회',
                         style: TextStyle(
                           color: context.textPrimary,
-                          fontSize: 20,
+                          fontSize: 21,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
                         ),
@@ -170,13 +177,20 @@ class MonthlySummaryCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: context.isDarkMode
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFF8FAFC),
+                    gradient: LinearGradient(
+                      colors: context.isDarkMode
+                          ? [
+                              const Color(0xFF78350F).withValues(alpha: 0.26),
+                              const Color(0xFF1E293B),
+                            ]
+                          : const [Color(0xFFFFFBEB), Color(0xFFF8FAFC)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: context.surfaceBorder,
-                      width: 0.8,
+                      color: AppColors.fireAmber.withValues(alpha: context.isDarkMode ? 0.28 : 0.28),
+                      width: 0.9,
                     ),
                   ),
                   child: Column(
@@ -184,7 +198,7 @@ class MonthlySummaryCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.emoji_events_outlined, size: 14, color: AppColors.fireAmber),
+                          const Icon(Icons.emoji_events_rounded, size: 14, color: AppColors.fireAmber),
                           const SizedBox(width: 5),
                           Flexible(
                             child: Text(
@@ -194,7 +208,7 @@ class MonthlySummaryCard extends StatelessWidget {
                               style: TextStyle(
                                 color: context.textSecondary,
                                 fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -204,7 +218,15 @@ class MonthlySummaryCard extends StatelessWidget {
                       if (topTitle != null)
                         Row(
                           children: [
-                            Icon(AppIcons.getIcon(topIcon), size: 16, color: topColor),
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: topColor.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Icon(AppIcons.getIcon(topIcon), size: 14, color: topColor),
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -220,10 +242,10 @@ class MonthlySummaryCard extends StatelessWidget {
                             ),
                             Text(
                               '$topCount회',
-                              style: const TextStyle(
-                                color: AppColors.primaryLight,
+                              style: TextStyle(
+                                color: context.isDarkMode ? AppColors.primaryLight : AppColors.primary,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],

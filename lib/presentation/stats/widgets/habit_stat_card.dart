@@ -23,18 +23,50 @@ class HabitStatCard extends StatelessWidget {
         color: context.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.surfaceBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.18 : 0.035),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         children: [
           // 1. 아이콘 + 습관명 + 스트릭 수치
           Row(
             children: [
+              // 좌측 습관 고유 컬러 세로 액센트 바
               Container(
-                width: 42,
-                height: 42,
+                width: 3.5,
+                height: 40,
+                margin: const EdgeInsets.only(right: 10),
                 decoration: BoxDecoration(
-                  color: habitColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [habitColor, habitColor.withValues(alpha: 0.45)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      habitColor.withValues(alpha: 0.26),
+                      habitColor.withValues(alpha: 0.12),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: habitColor.withValues(alpha: 0.36),
+                    width: 1.1,
+                  ),
                 ),
                 child: Icon(
                   AppIcons.getIcon(habit.iconName),
@@ -53,11 +85,12 @@ class HabitStatCard extends StatelessWidget {
                         color: context.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       habit.habitType == HabitType.count
                           ? '${habit.repeatSummary} · 목표 ${habit.targetCount}${habit.unit}'
@@ -65,6 +98,7 @@ class HabitStatCard extends StatelessWidget {
                       style: TextStyle(
                         color: context.textMuted,
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -74,29 +108,44 @@ class HabitStatCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.local_fire_department_rounded,
-                        color: AppColors.fireOrange,
-                        size: 16,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.fireOrange.withValues(
+                          alpha: context.isDarkMode ? 0.16 : 0.10),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: AppColors.fireOrange.withValues(alpha: 0.25),
+                        width: 0.8,
                       ),
-                      const SizedBox(width: 2),
-                      Text(
-                        '${habitStatus.currentStreak}일',
-                        style: const TextStyle(
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department_rounded,
                           color: AppColors.fireOrange,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          size: 14,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 2),
+                        Text(
+                          '${habitStatus.currentStreak}일',
+                          style: const TextStyle(
+                            color: AppColors.fireOrange,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 3),
                   Text(
                     '최고 ${habitStatus.bestStreak}일',
                     style: TextStyle(
                       color: context.textMuted,
                       fontSize: 11,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -109,23 +158,47 @@ class HabitStatCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: habitStatus.completionRate,
-                    minHeight: 6,
-                    backgroundColor: context.bg,
-                    valueColor: AlwaysStoppedAnimation<Color>(habitColor),
-                  ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final fillWidth =
+                        constraints.maxWidth * habitStatus.completionRate.clamp(0.0, 1.0);
+                    return Container(
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: context.isDarkMode
+                            ? Colors.white.withValues(alpha: 0.07)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 350),
+                          curve: Curves.easeOutCubic,
+                          width: fillWidth,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                habitColor.withValues(alpha: 0.78),
+                                habitColor,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '$ratePercent%',
                 style: TextStyle(
-                  color: context.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  color: ratePercent >= 80 ? habitColor : context.textSecondary,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],

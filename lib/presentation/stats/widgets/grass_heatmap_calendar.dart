@@ -49,6 +49,13 @@ class GrassHeatmapCalendar extends StatelessWidget {
         color: context.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.surfaceBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,10 +68,21 @@ class GrassHeatmapCalendar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.grid_view_rounded,
-                      color: AppColors.success,
-                      size: 18,
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.25),
+                          width: 1,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.grid_view_rounded,
+                        color: AppColors.success,
+                        size: 16,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -75,7 +93,8 @@ class GrassHeatmapCalendar extends StatelessWidget {
                         style: TextStyle(
                           color: context.textPrimary,
                           fontSize: 16,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ),
@@ -85,115 +104,140 @@ class GrassHeatmapCalendar extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.chevron_left_rounded, color: context.textSecondary),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: onPreviousMonth,
+                  _buildNavButton(
+                    context,
+                    icon: Icons.chevron_left_rounded,
+                    onTap: onPreviousMonth,
                   ),
-                  IconButton(
-                    icon: Icon(Icons.chevron_right_rounded, color: context.textSecondary),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: onNextMonth,
+                  const SizedBox(width: 6),
+                  _buildNavButton(
+                    context,
+                    icon: Icons.chevron_right_rounded,
+                    onTap: onNextMonth,
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          // 2. 요일 라벨 (월 화 수 목 금 토 일)
-          Row(
-            children: ['월', '화', '수', '목', '금', '토', '일'].map((day) {
-              return Expanded(
-                child: Center(
-                  child: Text(
-                    day,
-                    style: TextStyle(
-                      color: context.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 8),
-
-          // 3. 잔디밭 타일 그리드
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 42, // 최대 6주 * 7일
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              crossAxisSpacing: 6,
-              mainAxisSpacing: 6,
-              childAspectRatio: 1.0,
+          // 2~3. 요일 + 잔디밭 그리드 인셋 패널
+          Container(
+            padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+            decoration: BoxDecoration(
+              color: context.isDarkMode
+                  ? Colors.black.withValues(alpha: 0.22)
+                  : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.surfaceBorder.withValues(alpha: 0.7),
+                width: 0.8,
+              ),
             ),
-            itemBuilder: (context, index) {
-              final dayOffset = index - (startingWeekday - 1);
-              if (dayOffset < 0 || dayOffset >= daysInMonth) {
-                return const SizedBox.shrink();
-              }
-
-              final day = dayOffset + 1;
-              final dateStr =
-                  '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
-              final count = heatmapData[dateStr] ?? 0;
-              final isToday = DateUtil.today() == dateStr;
-              final isSelected = selectedDate == dateStr;
-
-              return GestureDetector(
-                onTap: () => onDateSelected?.call(dateStr),
-                child: Tooltip(
-                  message: '$dateStr : $count개 완료',
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      color: _getCellColor(count, context),
-                      borderRadius: BorderRadius.circular(9),
-                      border: Border.all(
-                        color: isSelected
-                            ? (context.isDarkMode ? AppColors.accent : AppColors.primary)
-                            : (isToday
-                                ? AppColors.primaryLight
-                                : (count > 0
-                                    ? Colors.transparent
-                                    : context.surfaceBorder.withValues(alpha: 0.6))),
-                        width: isSelected ? 2.2 : (isToday ? 1.4 : 0.8),
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.45),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$day',
-                        style: TextStyle(
-                          color: count > 0
-                              ? (context.isDarkMode ? Colors.white : (count >= 3 ? Colors.white : AppColors.lightTextPrimary))
-                              : context.textMuted,
-                          fontSize: isSelected ? 12 : 11,
-                          fontWeight: (isSelected || isToday) ? FontWeight.w900 : FontWeight.w500,
+            child: Column(
+              children: [
+                // 2. 요일 라벨 (월 화 수 목 금 토 일)
+                Row(
+                  children: ['월', '화', '수', '목', '금', '토', '일'].map((day) {
+                    final isSun = day == '일';
+                    final isSat = day == '토';
+                    return Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: TextStyle(
+                            color: isSun
+                                ? Colors.red.shade400
+                                : isSat
+                                    ? Colors.blue.shade400
+                                    : context.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            },
+                const SizedBox(height: 8),
+
+                // 3. 잔디밭 타일 그리드
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 42, // 최대 6주 * 7일
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemBuilder: (context, index) {
+                    final dayOffset = index - (startingWeekday - 1);
+                    if (dayOffset < 0 || dayOffset >= daysInMonth) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final day = dayOffset + 1;
+                    final dateStr =
+                        '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+                    final count = heatmapData[dateStr] ?? 0;
+                    final isToday = DateUtil.today() == dateStr;
+                    final isSelected = selectedDate == dateStr;
+
+                    return GestureDetector(
+                      onTap: () => onDateSelected?.call(dateStr),
+                      child: Tooltip(
+                        message: '$dateStr : $count개 완료',
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          decoration: BoxDecoration(
+                            color: count == 0
+                                ? (context.isDarkMode
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.white)
+                                : _getCellColor(count, context),
+                            borderRadius: BorderRadius.circular(9),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (context.isDarkMode ? AppColors.accent : AppColors.primary)
+                                  : (isToday
+                                      ? AppColors.primaryLight
+                                      : (count > 0
+                                          ? Colors.transparent
+                                          : context.surfaceBorder.withValues(alpha: 0.75))),
+                              width: isSelected ? 2.2 : (isToday ? 1.5 : 0.8),
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary.withValues(alpha: 0.45),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$day',
+                              style: TextStyle(
+                                color: count > 0
+                                    ? (context.isDarkMode ? Colors.white : (count >= 3 ? Colors.white : AppColors.lightTextPrimary))
+                                    : context.textMuted,
+                                fontSize: isSelected ? 12 : 11,
+                                fontWeight: (isSelected || isToday) ? FontWeight.w900 : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 14),
 
@@ -350,6 +394,35 @@ class GrassHeatmapCalendar extends StatelessWidget {
     } catch (_) {
       return dateStr;
     }
+  }
+
+  Widget _buildNavButton(
+    BuildContext context, {
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: context.isDarkMode
+          ? Colors.white.withValues(alpha: 0.06)
+          : const Color(0xFFF1F5F9),
+      borderRadius: BorderRadius.circular(9),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(9),
+        child: Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: context.surfaceBorder.withValues(alpha: 0.7),
+              width: 0.8,
+            ),
+          ),
+          child: Icon(icon, size: 18, color: context.textSecondary),
+        ),
+      ),
+    );
   }
 
   Widget _buildLegendCell(Color color, BuildContext context) {

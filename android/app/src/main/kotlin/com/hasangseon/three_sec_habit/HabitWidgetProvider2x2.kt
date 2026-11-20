@@ -101,13 +101,15 @@ class HabitWidgetProvider2x2 : HomeWidgetProvider() {
                 }
                 setTextColor(R.id.widget_2x2_check_icon, checkColor)
 
-                // 빠른 체크 버튼 클릭 시 백그라운드 콜백 URI 전송 (고유 path 지정)
+                // 빠른 체크 버튼 클릭 시 백그라운드 콜백 URI 전송 (습관이 없으면 앱 실행)
                 if (topHabitId != -1) {
                     val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
                         context,
                         Uri.parse("habit3sec://toggle/$topHabitId?id=$topHabitId")
                     )
                     setOnClickPendingIntent(R.id.widget_2x2_quick_check_btn, backgroundIntent)
+                } else {
+                    setOnClickPendingIntent(R.id.widget_2x2_quick_check_btn, pendingIntent)
                 }
             }
 

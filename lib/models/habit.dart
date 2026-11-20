@@ -131,6 +131,7 @@ class Habit {
   final String? reminderStartTime;    // '09:00' (간격 알림 시작)
   final String? reminderEndTime;      // '21:00' (간격 알림 종료)
   final bool reminderEnabled;
+  final String soundKey;              // 알림 사운드 키 ('default' 또는 'voice_*')
   final String createdAt;
   final bool isArchived;
 
@@ -151,6 +152,7 @@ class Habit {
     this.reminderStartTime,
     this.reminderEndTime,
     this.reminderEnabled = false,
+    this.soundKey = 'default',
     String? createdAt,
     this.isArchived = false,
   })  : repeatDays = repeatDays ?? const [1, 2, 3, 4, 5, 6, 7],
@@ -223,6 +225,7 @@ class Habit {
     String? reminderStartTime,
     String? reminderEndTime,
     bool? reminderEnabled,
+    String? soundKey,
     String? createdAt,
     bool? isArchived,
   }) {
@@ -244,6 +247,7 @@ class Habit {
       reminderStartTime: reminderStartTime ?? this.reminderStartTime,
       reminderEndTime: reminderEndTime ?? this.reminderEndTime,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+      soundKey: soundKey ?? this.soundKey,
       createdAt: createdAt ?? this.createdAt,
       isArchived: isArchived ?? this.isArchived,
     );
@@ -267,6 +271,7 @@ class Habit {
       'reminder_start_time': reminderStartTime,
       'reminder_end_time': reminderEndTime,
       'reminder_enabled': reminderEnabled ? 1 : 0,
+      'sound_key': soundKey,
       'created_at': createdAt,
       'is_archived': isArchived ? 1 : 0,
     };
@@ -298,6 +303,7 @@ class Habit {
       reminderStartTime: map['reminder_start_time'] as String?,
       reminderEndTime: map['reminder_end_time'] as String?,
       reminderEnabled: (map['reminder_enabled'] as int? ?? 0) == 1,
+      soundKey: (map['sound_key'] as String?) ?? 'default',
       createdAt: map['created_at'] as String? ?? DateTime.now().toIso8601String(),
       isArchived: (map['is_archived'] as int? ?? 0) == 1,
     );

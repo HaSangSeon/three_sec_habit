@@ -289,9 +289,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           SafeArea(
             top: false,
             bottom: true,
-            child: SizedBox(
-              height: 54,
-              child: Row(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
                 children: [
                   _buildTabItem(
                     index: 0,
@@ -312,6 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     label: '설정',
                   ),
                 ],
+                ),
               ),
             ),
           ),
@@ -740,12 +743,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onAddHabitPressed,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        child: const Icon(Icons.add_rounded, size: 30),
+      floatingActionButton: Container(
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF9333EA), Color(0xFF6366F1)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.28),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.42),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: _onAddHabitPressed,
+            customBorder: const CircleBorder(),
+            child: const Center(
+              child: Icon(Icons.add_rounded, size: 30, color: Colors.white),
+            ),
+          ),
+        ),
       ),
     );
   }

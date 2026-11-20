@@ -148,130 +148,108 @@ class _HabitCalendarPickerDialogState extends State<HabitCalendarPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. 헤더 영역 (그라데이션, 아이콘, 타이틀 + 실시간 선택 날짜 뱃지, 닫기 버튼)
+            // 1. 프리미엄 바이올렛 그라데이션 헤더 영역 (캡슐 뱃지 + 닫기 버튼 + 타이틀)
             Container(
-              padding: const EdgeInsets.fromLTRB(18, 16, 14, 14),
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark
-                      ? [
-                          const Color(0xFF1E293B),
-                          const Color(0xFF172033),
-                        ]
-                      : [
-                          const Color(0xFFF5F3FF),
-                          const Color(0xFFF8FAFC),
-                          Colors.white,
-                        ],
+                  colors: [
+                    AppColors.primary.withValues(alpha: isDark ? 0.30 : 0.16),
+                    AppColors.primaryLight.withValues(alpha: isDark ? 0.10 : 0.05),
+                    isDark ? const Color(0xFF1E293B) : Colors.white,
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(26),
                 ),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.20),
-                          AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: isDark ? 0.45 : 0.30),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_month_rounded,
-                      color: AppColors.primary,
-                      size: 19,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(
+                              alpha: isDark ? 0.24 : 0.14),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.primaryLight.withValues(alpha: 0.45),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              '날짜 선택',
-                              style: TextStyle(
-                                color: context.textPrimary,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16.5,
-                                letterSpacing: -0.3,
-                              ),
+                            const Icon(
+                              Icons.calendar_month_rounded,
+                              size: 13,
+                              color: AppColors.primaryLight,
                             ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: isDark ? 0.20 : 0.10),
-                                  borderRadius: BorderRadius.circular(7),
-                                  border: Border.all(
-                                    color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.20),
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  DateUtil.isSameDay(_selectedDate, today)
-                                      ? '오늘 선택됨'
-                                      : '${_selectedDate.month}.${_selectedDate.day} (${DateUtil.getWeekdayKorean(_selectedDate.weekday)})',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                            const SizedBox(width: 5),
+                            Text(
+                              DateUtil.isSameDay(_selectedDate, today)
+                                  ? '기록 달력 · 오늘 선택됨'
+                                  : '기록 달력 · ${_selectedDate.month}월 ${_selectedDate.day}일 (${DateUtil.getWeekdayKorean(_selectedDate.weekday)})',
+                              style: TextStyle(
+                                color: isDark
+                                    ? const Color(0xFFDDD6FE)
+                                    : AppColors.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '원하는 날짜를 선택하여 실천 기록을 확인하세요',
-                          style: TextStyle(
-                            color: context.textMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                      ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.10)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: context.textSecondary,
+                            ),
                           ),
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '날짜 선택',
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 19,
+                      letterSpacing: -0.4,
                     ),
                   ),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.of(context).pop(),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.05),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 17,
-                          color: context.textSecondary,
-                        ),
-                      ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '원하는 날짜를 선택해 지난 실천 기록을 확인하고 채워보세요.',
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -554,6 +532,35 @@ class _HabitCalendarPickerDialogState extends State<HabitCalendarPickerDialog> {
                       ),
                     ),
 
+                    const SizedBox(height: 8),
+
+                    // 깔끔한 상태 범례 바
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.success,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            '실천 완료 기록 있음',
+                            style: TextStyle(
+                              color: context.textMuted,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     const SizedBox(height: 10),
                   ],
                 ),
@@ -630,7 +637,7 @@ class _HabitCalendarPickerDialogState extends State<HabitCalendarPickerDialog> {
                               child: Text(
                                 DateUtil.isSameDay(_selectedDate, today)
                                     ? '오늘로 이동'
-                                    : '${_selectedDate.month}/${_selectedDate.day} 이동',
+                                    : '${_selectedDate.month}월 ${_selectedDate.day}일 (${DateUtil.getWeekdayKorean(_selectedDate.weekday)}) 보기',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
